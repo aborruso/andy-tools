@@ -66,13 +66,13 @@ is_windows_path() {
 
 if is_url "$input"; then
   target=$input
-  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" >/dev/null 2>&1
+  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" >/dev/null 2>&1 || true
   exit 0
 fi
 
 if is_windows_path "$input"; then
   target=$input
-  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" >/dev/null 2>&1
+  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" >/dev/null 2>&1 || true
   exit 0
 fi
 
@@ -102,5 +102,5 @@ if [[ -d "$input" ]]; then
   fi
   explorer.exe "$target" >/dev/null 2>&1 || true
 else
-  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" >/dev/null 2>&1
+  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" >/dev/null 2>&1 || true
 fi
