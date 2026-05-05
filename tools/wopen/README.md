@@ -48,13 +48,13 @@ By default, this copies the `wopen` executable to:
 $HOME/bin/wopen
 ```
 
-Make sure `$HOME/bin` is in your `PATH`. If it is not, add this line to your shell configuration file, such as `~/.bashrc`:
+Make sure `$HOME/bin` is in your `PATH`. If it is not, add it to the startup file used by your shell, for example `~/.bashrc`, `~/.zshrc`, or another shell-specific configuration file:
 
-```bash
+```sh
 export PATH="$HOME/bin:$PATH"
 ```
 
-Then reload your shell and check that `wopen` is available:
+Then restart or reload your shell and check that `wopen` is available:
 
 ```bash
 wopen --help

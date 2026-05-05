@@ -2,6 +2,7 @@
 
 ## 2026-05-05
 
+- Made the `wopen` PATH setup instructions shell-agnostic.
 - Made the `wopen` installer user-independent by defaulting to `$HOME/bin`.
 - Updated the `wopen` install guide with the public GitHub clone URL.
 - Clarified the `wopen` install guide with clone-and-install steps.
