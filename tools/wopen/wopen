@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  wopen <file|directory|url>
+  wopen --help
+
+Open a file, directory, or URL from WSL/Linux with Windows.
+
+Behavior:
+  - WSL/Linux files are converted with wslpath and opened with the default Windows app.
+  - WSL/Linux directories are converted with wslpath and opened in Windows File Explorer.
+  - Paths under /mnt/c/... work like any other WSL/Linux path.
+  - Windows paths are passed through unchanged.
+  - URLs are opened with the default Windows handler, usually the browser.
+
+Examples:
+  wopen info.md
+  wopen /home/user/info.md
+  wopen .
+  wopen /mnt/c/Users/user/Desktop/trash
+  wopen 'C:\Users\user\Desktop\info.md'
+  wopen https://example.com
+
+Agent-friendly notes:
+  - Non-interactive: never prompts for input.
+  - Requires exactly one argument.
+  - Fails fast with an actionable error when a path or required command is missing.
+
+Exit codes:
+  0  Open command was sent to Windows.
+  1  Runtime error, such as missing WSL command or missing path.
+  2  Invalid usage.
+USAGE
+}
+
+if [[ $# -ne 1 ]]; then
+  echo "wopen: error: expected exactly one argument." >&2
+  echo "Run: wopen --help" >&2
+  exit 2
+fi
+
+input=$1
+
+if [[ "$input" == "-h" || "$input" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+if ! command -v powershell.exe >/dev/null 2>&1; then
+  echo "wopen: error: powershell.exe not found." >&2
+  echo "This tool must run inside WSL with Windows interop enabled." >&2
+  echo "Run: wopen --help" >&2
+  exit 1
+fi
+
+is_url() {
+  [[ "$1" =~ ^[A-Za-z][A-Za-z0-9+.-]*:// ]]
+}
+
+is_windows_path() {
+  [[ "$1" =~ ^[A-Za-z]:[\\/] ]] || [[ "$1" =~ ^\\\\ ]]
+}
+
+if is_url "$input"; then
+  target=$input
+  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p }' "$target" >/dev/null
+  exit 0
+fi
+
+if is_windows_path "$input"; then
+  target=$input
+  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p }' "$target" >/dev/null
+  exit 0
+fi
+
+if ! command -v wslpath >/dev/null 2>&1; then
+  echo "wopen: error: wslpath not found." >&2
+  echo "Required to convert WSL/Linux paths to Windows paths." >&2
+  echo "Run: wopen --help" >&2
+  exit 1
+fi
+
+if [[ ! -e "$input" ]]; then
+  echo "wopen: error: path not found: $input" >&2
+  echo "Use an existing file or directory, for example:" >&2
+  echo "  wopen ." >&2
+  echo "  wopen /mnt/c/Users/user/Desktop/trash" >&2
+  exit 1
+fi
+
+target=$(wslpath -w "$input")
+
+if [[ -d "$input" ]]; then
+  if ! command -v explorer.exe >/dev/null 2>&1; then
+    echo "wopen: error: explorer.exe not found." >&2
+    echo "Required to open directories in Windows File Explorer." >&2
+    echo "Run: wopen --help" >&2
+    exit 1
+  fi
+  explorer.exe "$target" >/dev/null 2>&1
+else
+  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p }' "$target" >/dev/null
+fi

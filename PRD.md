@@ -1,102 +1,102 @@
 # PRD — Andy Tools
 
-## Stato
+## Status
 
-Bozza iniziale di idea. Il repository non è ancora inizializzato come progetto operativo.
+Initial idea draft. The repository has not yet been initialized as an operational project.
 
 ## Idea
 
-Creare un repository personale in cui raccogliere piccoli tool sviluppati nel tempo per risolvere problemi pratici, automatizzare attività ripetitive o velocizzare flussi di lavoro quotidiani.
+Create a personal repository to collect small tools developed over time to solve practical problems, automate repetitive tasks, or speed up everyday workflows.
 
-Il repo nasce come contenitore semplice, flessibile e personale: non come prodotto pubblico strutturato, ma come spazio ordinato dove salvare, documentare e riusare strumenti utili.
+The repo is intended as a simple, flexible, personal container: not as a structured public product, but as an organized space to save, document, and reuse useful tools.
 
-## Problema
+## Problem
 
-Nel lavoro quotidiano emergono spesso micro-esigenze: conversioni, controlli, script di supporto, estrazioni dati, normalizzazioni, automazioni o utility specifiche.
+Daily work often creates small, recurring needs: conversions, checks, support scripts, data extraction, normalization, automation, or specific utilities.
 
-Senza un posto unico dove conservarle, queste soluzioni rischiano di rimanere sparse, difficili da ritrovare o da riusare.
+Without a single place to store them, these solutions risk staying scattered and becoming hard to find or reuse.
 
-## Obiettivo
+## Goal
 
-Avere un repository unico per:
+Have one repository to:
 
-- raccogliere piccoli tool personali;
-- renderli facili da ritrovare;
-- documentare rapidamente cosa fanno e come si usano;
-- riusare soluzioni già create;
-- far crescere il repo in modo organico, senza una struttura troppo rigida all’inizio.
+- collect small personal tools;
+- make them easy to find;
+- quickly document what they do and how to use them;
+- reuse solutions that already exist;
+- let the repo grow organically, without a structure that is too rigid at the beginning.
 
-## Pubblico di riferimento
+## Target audience
 
-Utente principale: l’autore del repository.
+Primary user: the repository author.
 
-Possibili utenti secondari, in futuro:
+Possible secondary users in the future:
 
-- colleghi;
-- collaboratori;
-- persone con esigenze simili;
-- chi trova utile uno specifico tool pubblicato nel repo.
+- colleagues;
+- collaborators;
+- people with similar needs;
+- anyone who finds a specific published tool useful.
 
-## Ambito iniziale
+## Initial scope
 
-Il repository potrà contenere, ad esempio:
+The repository may contain, for example:
 
-- script da riga di comando;
-- piccoli tool per dati e file;
-- utility per conversioni o pulizia dati;
-- automazioni personali;
-- snippet riutilizzabili;
-- mini-progetti indipendenti.
+- command-line scripts;
+- small tools for data and files;
+- utilities for conversions or data cleaning;
+- personal automations;
+- reusable snippets;
+- independent mini-projects.
 
-Ogni tool dovrebbe idealmente avere una descrizione minima: cosa fa, quando usarlo, dipendenze, esempio di utilizzo.
+Each tool should ideally have a minimal description: what it does, when to use it, dependencies, and a usage example.
 
-## Fuori ambito per ora
+## Out of scope for now
 
-In questa fase non sono prioritari:
+At this stage, these are not priorities:
 
-- packaging formale;
-- pubblicazione su package manager;
-- interfacce grafiche;
-- documentazione estesa;
-- architettura complessa;
-- compatibilità garantita per utenti esterni.
+- formal packaging;
+- publication on package managers;
+- graphical interfaces;
+- extensive documentation;
+- complex architecture;
+- guaranteed compatibility for external users.
 
-## Principi guida
+## Guiding principles
 
-- Semplicità prima di tutto.
-- Ogni tool deve risolvere un problema concreto.
-- Meglio aggiungere poco, ma utile.
-- La documentazione minima è parte del tool.
-- La struttura del repo può evolvere con l’uso reale.
+- Simplicity first.
+- Every tool must solve a concrete problem.
+- Better to add little, but useful.
+- Minimal documentation is part of the tool.
+- The repo structure can evolve with real use.
 
-## Possibile struttura futura
+## Possible future structure
 
-Esempio indicativo, non vincolante:
+Indicative, non-binding example:
 
 ```text
 andy-tools/
 ├── README.md
 ├── PRD.md
 ├── tools/
-│   ├── nome-tool-1/
-│   └── nome-tool-2/
+│   ├── tool-name-1/
+│   └── tool-name-2/
 ├── scripts/
 └── docs/
 ```
 
-## Criteri di successo
+## Success criteria
 
-Il repository sarà utile se:
+The repository will be useful if it:
 
-- permette di ritrovare rapidamente un tool già creato;
-- riduce lavoro ripetitivo;
-- rende più facile trasformare un’esigenza ricorrente in uno script riutilizzabile;
-- resta semplice da mantenere;
-- cresce solo quando c’è un bisogno reale.
+- makes it possible to quickly find a tool that was already created;
+- reduces repetitive work;
+- makes it easier to turn a recurring need into a reusable script;
+- remains simple to maintain;
+- grows only when there is a real need.
 
-## Domande aperte
+## Open questions
 
-- I tool saranno principalmente in Python, shell, Node.js o linguaggi misti?
-- Ogni tool vivrà in una cartella autonoma o alcuni saranno semplici script singoli?
-- Il repo resterà personale o potrà diventare pubblico e documentato per altri?
-- Serve una convenzione minima per nomi, README e dipendenze?
+- Will the tools mainly use Python, shell, Node.js, or mixed languages?
+- Will each tool live in its own folder, or will some be simple standalone scripts?
+- Will the repo remain personal, or could it become public and documented for others?
+- Is a minimal convention needed for names, READMEs, and dependencies?
