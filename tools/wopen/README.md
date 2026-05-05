@@ -42,16 +42,28 @@ If you already cloned the repository, run this from the repository root:
 make -C tools/wopen install
 ```
 
-This copies the `wopen` executable to:
+By default, this copies the `wopen` executable to:
 
 ```text
-/home/aborruso/bin/wopen
+$HOME/bin/wopen
 ```
 
-On this machine, `/home/aborruso/bin` is already in `PATH`, so the command can be used immediately after installation:
+Make sure `$HOME/bin` is in your `PATH`. If it is not, add this line to your shell configuration file, such as `~/.bashrc`:
+
+```bash
+export PATH="$HOME/bin:$PATH"
+```
+
+Then reload your shell and check that `wopen` is available:
 
 ```bash
 wopen --help
+```
+
+To install to a different directory, pass `BINDIR` explicitly:
+
+```bash
+make -C tools/wopen install BINDIR=/usr/local/bin
 ```
 
 ### Check that it works
@@ -75,7 +87,13 @@ make -C tools/wopen uninstall
 This removes:
 
 ```text
-/home/aborruso/bin/wopen
+$HOME/bin/wopen
+```
+
+If you installed to a custom directory, pass the same `BINDIR` value:
+
+```bash
+make -C tools/wopen uninstall BINDIR=/usr/local/bin
 ```
 
 ## Notes

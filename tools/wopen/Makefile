@@ -1,4 +1,4 @@
-PREFIX ?= /home/aborruso
+PREFIX ?= $(HOME)
 BINDIR ?= $(PREFIX)/bin
 INSTALL ?= install
 
