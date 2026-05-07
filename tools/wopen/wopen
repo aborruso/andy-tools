@@ -100,7 +100,7 @@ if [[ -d "$input" ]]; then
     echo "Run: wopen --help" >&2
     exit 1
   fi
-  explorer.exe "$target" >/dev/null 2>&1 || true
+  ( cd "$input" && explorer.exe . ) >/dev/null 2>&1 || true
 else
   powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" >/dev/null 2>&1 || true
 fi
