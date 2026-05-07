@@ -39,7 +39,7 @@ Expected output:
 ls
 ```
 
-By default, `howcli` only prints the generated command.
+By default, `howcli` prints the generated command and copies it to the system clipboard when a clipboard command is available.
 
 To ask for confirmation and execute it:
 
@@ -103,6 +103,7 @@ pi -p \
 ## Notes
 
 - `howcli` prints the generated command without executing it.
+- `howcli` also copies the generated command to the system clipboard when `wl-copy`, `xclip`, `pbcopy`, or `clip.exe` is available.
 - `howcli --run` asks before executing the generated command.
 - `make install` installs the Pi extension in `~/.pi/agent/extensions/` and the `howcli` command in `~/bin/`.
 - Make sure `~/bin` is in your `PATH`.

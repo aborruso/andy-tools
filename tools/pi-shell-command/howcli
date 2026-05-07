@@ -3,6 +3,34 @@ set -euo pipefail
 
 run=false
 
+copy_to_clipboard() {
+  if command -v timeout >/dev/null 2>&1; then
+    if command -v wl-copy >/dev/null 2>&1 && printf '%s' "$1" | timeout 2s wl-copy >/dev/null 2>&1; then
+      return 0
+    elif command -v xclip >/dev/null 2>&1 && printf '%s' "$1" | timeout 2s xclip -selection clipboard >/dev/null 2>&1; then
+      return 0
+    elif command -v pbcopy >/dev/null 2>&1 && printf '%s' "$1" | timeout 2s pbcopy >/dev/null 2>&1; then
+      return 0
+    elif command -v clip.exe >/dev/null 2>&1 && printf '%s\n' "$1" | timeout 2s clip.exe >/dev/null 2>&1; then
+      return 0
+    fi
+  else
+    if command -v wl-copy >/dev/null 2>&1; then
+      printf '%s' "$1" | wl-copy >/dev/null 2>&1
+    elif command -v xclip >/dev/null 2>&1; then
+      printf '%s' "$1" | xclip -selection clipboard >/dev/null 2>&1
+    elif command -v pbcopy >/dev/null 2>&1; then
+      printf '%s' "$1" | pbcopy >/dev/null 2>&1
+    elif command -v clip.exe >/dev/null 2>&1; then
+      printf '%s\n' "$1" | clip.exe >/dev/null 2>&1
+    else
+      return 1
+    fi
+  fi
+
+  return 1
+}
+
 case "${1:-}" in
   --run)
     run=true
@@ -14,7 +42,7 @@ Usage:
   howcli "natural language request"
   howcli --run "natural language request"
 
-By default, howcli only prints the generated shell command.
+By default, howcli prints the generated shell command and copies it to the system clipboard when available.
 Use --run to ask for confirmation and execute it.
 EOF
     exit 0
@@ -39,6 +67,8 @@ if [ -z "$command" ]; then
   echo "No command generated." >&2
   exit 1
 fi
+
+copy_to_clipboard "$command" || true
 
 printf '%s\n' "$command"
 

@@ -2,6 +2,7 @@
 
 ## 2026-05-07
 
+- Made `howcli` copy generated commands to the system clipboard by default when possible, preferring non-blocking Linux clipboard tools before `clip.exe`.
 - Documented Pi Coding Agent as a prerequisite for `pi-shell-command`.
 - Clarified the `pi-shell-command` system prompt for Linux CLI requests.
 - Made `howcli` execution opt-in via `--run`.
