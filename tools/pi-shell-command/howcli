@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+run=false
+
+case "${1:-}" in
+  --run)
+    run=true
+    shift
+    ;;
+  -h|--help)
+    cat >&2 <<'EOF'
+Usage:
+  howcli "natural language request"
+  howcli --run "natural language request"
+
+By default, howcli only prints the generated shell command.
+Use --run to ask for confirmation and execute it.
+EOF
+    exit 0
+    ;;
+esac
+
+if [ "$#" -eq 0 ]; then
+  echo 'Usage: howcli "natural language request"' >&2
+  exit 2
+fi
+
+command="$(pi -p \
+  --shell-command \
+  --no-session \
+  --no-tools \
+  --no-context-files \
+  --no-skills \
+  --no-prompt-templates \
+  "$*")"
+
+if [ -z "$command" ]; then
+  echo "No command generated." >&2
+  exit 1
+fi
+
+printf '%s\n' "$command"
+
+if [ "$run" != true ]; then
+  exit 0
+fi
+
+printf 'Eseguire? [Y/n] ' >&2
+
+if ! IFS= read -r answer; then
+  printf '\n' >&2
+  exit 130
+fi
+
+case "${answer,,}" in
+  ""|y|yes|s|si|sì)
+    exec bash -lc "$command"
+    ;;
+  n|no)
+    exit 0
+    ;;
+  *)
+    echo "Non eseguo." >&2
+    exit 1
+    ;;
+esac

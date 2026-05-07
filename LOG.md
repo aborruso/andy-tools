@@ -1,5 +1,15 @@
 # LOG
 
+## 2026-05-07
+
+- Documented Pi Coding Agent as a prerequisite for `pi-shell-command`.
+- Clarified the `pi-shell-command` system prompt for Linux CLI requests.
+- Made `howcli` execution opt-in via `--run`.
+- Made `howcli` ask before executing the generated shell command.
+- Added the `howcli` command installed by the `pi-shell-command` Makefile.
+- Added a Makefile installer for the `pi-shell-command` extension.
+- Added the `pi-shell-command` extension to print shell commands from natural-language requests.
+
 ## 2026-05-05
 
 - Made the `wopen` PATH setup instructions shell-agnostic.
