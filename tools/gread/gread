@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage:
+  gread gws
+  gread gwsb
+  gread --help
+
+Show unread primary Gmail messages from the last 7 days, excluding senders
+listed in global and profile-specific exclude files.
+EOF
+}
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  usage
+  exit 0
+fi
+
+if [[ $# -ne 1 ]]; then
+  usage >&2
+  exit 2
+fi
+
+profile="$1"
+case "$profile" in
+  gws|gwsb) ;;
+  *)
+    echo "gread: unknown profile '$profile'" >&2
+    echo "gread: expected one of: gws, gwsb" >&2
+    exit 2
+    ;;
+esac
+
+if ! command -v "$profile" >/dev/null 2>&1; then
+  echo "gread: command '$profile' not found in PATH" >&2
+  exit 127
+fi
+
+script_path="${BASH_SOURCE[0]}"
+if command -v readlink >/dev/null 2>&1; then
+  script_path="$(readlink -f "$script_path" 2>/dev/null || printf '%s\n' "$script_path")"
+fi
+script_dir="$(cd "$(dirname "$script_path")" && pwd)"
+
+if [[ -n "${GREAD_EXCLUDES_DIR:-}" ]]; then
+  excludes_dir="$GREAD_EXCLUDES_DIR"
+elif [[ -d "$script_dir/excludes" ]]; then
+  excludes_dir="$script_dir/excludes"
+elif [[ -d "$script_dir/../share/gread/excludes" ]]; then
+  excludes_dir="$(cd "$script_dir/../share/gread/excludes" && pwd)"
+elif [[ -d "$HOME/share/gread/excludes" ]]; then
+  excludes_dir="$HOME/share/gread/excludes"
+else
+  echo "gread: excludes directory not found" >&2
+  echo "gread: set GREAD_EXCLUDES_DIR or install with 'make -C tools/gread install'" >&2
+  exit 1
+fi
+
+query_parts=("is:unread" "category:primary" "newer_than:7d")
+
+add_excludes() {
+  local file="$1"
+  local line
+  [[ -f "$file" ]] || return 0
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%%#*}"
+    line="$(printf '%s' "$line" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    [[ -n "$line" ]] || continue
+    query_parts+=("-from:$line")
+  done < "$file"
+}
+
+add_excludes "$excludes_dir/global.txt"
+add_excludes "$excludes_dir/$profile.txt"
+
+query="${query_parts[*]}"
+
+exec "$profile" gmail +triage --max 50 --format table --query "$query"

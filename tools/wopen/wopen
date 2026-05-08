@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  wopen <file|directory|url>
+  wopen [file|directory|url]
   wopen --help
 
 Open a file, directory, or URL from WSL/Linux with Windows.
@@ -17,6 +17,7 @@ Behavior:
   - URLs are opened with the default Windows handler, usually the browser.
 
 Examples:
+  wopen
   wopen info.md
   wopen /home/user/info.md
   wopen .
@@ -26,7 +27,8 @@ Examples:
 
 Agent-friendly notes:
   - Non-interactive: never prompts for input.
-  - Requires exactly one argument.
+  - With no arguments, opens the current directory, like `wopen .`.
+  - Requires at most one argument.
   - Fails fast with an actionable error when a path or required command is missing.
 
 Exit codes:
@@ -36,13 +38,13 @@ Exit codes:
 USAGE
 }
 
-if [[ $# -ne 1 ]]; then
-  echo "wopen: error: expected exactly one argument." >&2
+if [[ $# -gt 1 ]]; then
+  echo "wopen: error: expected at most one argument." >&2
   echo "Run: wopen --help" >&2
   exit 2
 fi
 
-input=$1
+input=${1:-.}
 
 if [[ "$input" == "-h" || "$input" == "--help" ]]; then
   usage

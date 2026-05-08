@@ -9,13 +9,14 @@ The tool is designed to be useful both for humans working in a shell and for AI 
 ## Usage
 
 ```bash
-wopen <file|directory|url>
+wopen [file|directory|url]
 wopen --help
 ```
 
 Examples:
 
 ```bash
+wopen
 wopen info.md
 wopen /home/user/info.md
 wopen .
@@ -99,7 +100,8 @@ make -C tools/wopen uninstall BINDIR=/usr/local/bin
 ## Notes
 
 - Non-interactive: never prompts for input.
-- Requires exactly one argument.
+- With no arguments, opens the current directory, like `wopen .`.
+- Requires at most one argument.
 - Linux/WSL paths are converted with `wslpath -w`.
 - Linux/WSL directories, including paths like `/mnt/c/Users/...`, are opened with `explorer.exe`.
 - Windows paths are passed through unchanged.

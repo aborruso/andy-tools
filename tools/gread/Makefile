@@ -1,0 +1,19 @@
+PREFIX ?= $(HOME)
+BINDIR ?= $(PREFIX)/bin
+DATADIR ?= $(PREFIX)/share/gread
+INSTALL ?= install
+
+.PHONY: install uninstall check
+
+install:
+	$(INSTALL) -d "$(BINDIR)"
+	$(INSTALL) -m 0755 gread "$(BINDIR)/gread"
+	$(INSTALL) -d "$(DATADIR)/excludes"
+	$(INSTALL) -m 0644 excludes/*.txt "$(DATADIR)/excludes/"
+
+uninstall:
+	rm -f "$(BINDIR)/gread"
+	rm -rf "$(DATADIR)"
+
+check:
+	bash -n gread

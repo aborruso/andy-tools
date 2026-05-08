@@ -1,5 +1,10 @@
 # LOG
 
+## 2026-05-08
+
+- Added `gread` to show unread primary Gmail messages for `gws` or `gwsb` with sender exclusions loaded from files.
+- Made `wopen` with no arguments open the current directory, equivalent to `wopen .`.
+
 ## 2026-05-07
 
 - Made `howcli` copy generated commands to the system clipboard by default when possible, preferring non-blocking Linux clipboard tools before `clip.exe`.

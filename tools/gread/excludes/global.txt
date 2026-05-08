@@ -1,0 +1,12 @@
+# One sender or domain per line.
+# Blank lines and comments are ignored.
+noreply
+no-reply
+donotreply
+notifications
+executiveassistant@e.read.ai
+@substack.com
+spn@archive.org
+@iubenda.com
+calendar-notification@google.com
+comunicazioni@staff.aruba.it
