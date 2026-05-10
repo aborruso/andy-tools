@@ -54,6 +54,7 @@ if [ "$#" -eq 0 ]; then
 fi
 
 command="$(pi -p \
+  --model openai-codex/gpt-5.4 \
   --shell-command \
   --no-session \
   --no-tools \
