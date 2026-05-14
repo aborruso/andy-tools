@@ -1,0 +1,235 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage:
+  md-gist [options] [FILE]
+  md-gist --help
+
+Publish Markdown quickly to GitHub Gist.
+
+Input:
+  - Provide a FILE argument, or
+  - pipe content on stdin.
+  - If both FILE and stdin are present, FILE wins.
+
+Options:
+  -d, --description TEXT  Gist description. Default: Shared via md-gist
+  -f, --filename NAME     Filename inside the gist. Default from FILE basename or note.md for stdin
+  -p, --public            Create a public gist (default)
+  -s, --secret            Create a secret gist
+  -c, --copy              Copy the resulting URL to the clipboard if possible
+  -r, --raw               Print only the raw URL
+  -o, --open              Open the gist page in the browser
+  -h, --help              Show this help
+EOF
+}
+
+default_description='Shared via md-gist'
+description="$default_description"
+filename=''
+visibility='public'
+copy_url=false
+print_raw=false
+open_gist=false
+input_file=''
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -d|--description)
+      [[ $# -ge 2 ]] || { echo "md-gist: missing value for $1" >&2; exit 2; }
+      description="$2"
+      shift 2
+      ;;
+    -f|--filename)
+      [[ $# -ge 2 ]] || { echo "md-gist: missing value for $1" >&2; exit 2; }
+      filename="$2"
+      shift 2
+      ;;
+    -p|--public)
+      visibility='public'
+      shift
+      ;;
+    -s|--secret)
+      visibility='secret'
+      shift
+      ;;
+    -c|--copy)
+      copy_url=true
+      shift
+      ;;
+    -r|--raw)
+      print_raw=true
+      shift
+      ;;
+    -o|--open)
+      open_gist=true
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "md-gist: unknown option: $1" >&2
+      echo "Run: md-gist --help" >&2
+      exit 2
+      ;;
+    *)
+      if [[ -n "$input_file" ]]; then
+        echo "md-gist: expected at most one FILE argument" >&2
+        echo "Run: md-gist --help" >&2
+        exit 2
+      fi
+      input_file="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ $# -gt 0 ]]; then
+  echo "md-gist: expected at most one FILE argument" >&2
+  echo "Run: md-gist --help" >&2
+  exit 2
+fi
+
+if ! command -v gh >/dev/null 2>&1; then
+  echo "md-gist: gh not found in PATH" >&2
+  echo "Install GitHub CLI and run: gh auth login" >&2
+  exit 127
+fi
+
+has_stdin=false
+if [[ ! -t 0 ]]; then
+  has_stdin=true
+fi
+
+stdin_file=''
+cleanup() {
+  if [[ -n "$stdin_file" && -f "$stdin_file" ]]; then
+    rm -f "$stdin_file"
+  fi
+}
+trap cleanup EXIT
+
+if [[ -n "$input_file" ]]; then
+  if [[ ! -f "$input_file" ]]; then
+    echo "md-gist: file not found: $input_file" >&2
+    exit 1
+  fi
+  source_file="$input_file"
+  if [[ -z "$filename" ]]; then
+    filename="$(basename "$input_file")"
+  fi
+elif $has_stdin; then
+  stdin_file="$(mktemp)"
+  cat > "$stdin_file"
+  if [[ ! -s "$stdin_file" ]]; then
+    echo "md-gist: no input provided" >&2
+    echo "Run: md-gist --help" >&2
+    exit 2
+  fi
+  source_file="$stdin_file"
+  if [[ -z "$filename" ]]; then
+    filename='note.md'
+  fi
+else
+  echo "md-gist: no input provided" >&2
+  echo "Run: md-gist --help" >&2
+  exit 2
+fi
+
+copy_to_clipboard() {
+  local value="$1"
+
+  if command -v xclip >/dev/null 2>&1; then
+    printf '%s' "$value" | xclip -selection clipboard
+    return 0
+  fi
+
+  if command -v wl-copy >/dev/null 2>&1; then
+    printf '%s' "$value" | wl-copy
+    return 0
+  fi
+
+  if command -v clip.exe >/dev/null 2>&1; then
+    printf '%s' "$value" | clip.exe
+    return 0
+  fi
+
+  return 1
+}
+
+open_in_browser() {
+  local url="$1"
+
+  if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$url" >/dev/null 2>&1 &
+    return 0
+  fi
+
+  if command -v open >/dev/null 2>&1; then
+    open "$url" >/dev/null 2>&1 &
+    return 0
+  fi
+
+  if command -v powershell.exe >/dev/null 2>&1; then
+    powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$url" >/dev/null 2>&1 || true
+    return 0
+  fi
+
+  return 1
+}
+
+raw_url_from_gist() {
+  local gist_url="$1"
+  local api_url files_count raw
+
+  api_url="${gist_url/https:\/\/gist.github.com\//https:\/\/api.github.com\/gists\/}"
+  raw="$(gh api "$api_url" --jq '.files | to_entries[0].value.raw_url' 2>/dev/null || true)"
+  if [[ -n "$raw" && "$raw" != "null" ]]; then
+    printf '%s\n' "$raw"
+    return 0
+  fi
+  return 1
+}
+
+gh_args=(gist create "$source_file" -d "$description" -f "$filename")
+if [[ "$visibility" == 'public' ]]; then
+  gh_args+=(-p)
+fi
+
+gist_url="$(gh "${gh_args[@]}")" || {
+  echo "md-gist: failed to create gist" >&2
+  echo "Run: gh auth login" >&2
+  exit 1
+}
+
+page_url="$gist_url"
+if $print_raw; then
+  if ! output_url="$(raw_url_from_gist "$page_url")"; then
+    echo "md-gist: could not derive raw URL from gist" >&2
+    exit 1
+  fi
+else
+  output_url="$page_url"
+fi
+
+if $copy_url; then
+  if ! copy_to_clipboard "$output_url"; then
+    echo "md-gist: warning: no clipboard tool available; URL not copied" >&2
+  fi
+fi
+
+if $open_gist; then
+  if ! open_in_browser "$page_url"; then
+    echo "md-gist: warning: could not open browser" >&2
+  fi
+fi
+
+printf '%s\n' "$output_url"

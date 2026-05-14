@@ -1,6 +1,6 @@
 # gread
 
-`gread` shows unread primary Gmail messages from the last 7 days for one of two configured Google Workspace CLIs: `gws` or `gwsb`.
+`gread` shows starred or unread primary Gmail messages from the last 7 days for one of two configured Google Workspace CLIs: `gws` or `gwsb`.
 
 It wraps this fixed command shape:
 
@@ -11,7 +11,7 @@ It wraps this fixed command shape:
 The base query is fixed:
 
 ```text
-is:unread category:primary newer_than:7d
+(is:starred OR is:unread) category:primary newer_than:7d
 ```
 
 Sender exclusions are read from text files instead of being hardcoded in the command line.

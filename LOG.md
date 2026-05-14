@@ -1,5 +1,16 @@
 # LOG
 
+## 2026-05-14
+
+- Added `md-gist`, a small Bash CLI to publish Markdown to GitHub Gist from a file or stdin, with optional copy, open, and raw URL output.
+- Added the `md-gist` design note in `docs/plans/2026-05-14-md-gist-design.md`.
+- Added `docs/future-ideas.md` with follow-up ideas for gist-based sharing, including rendered-host URLs inspired by `gisthost.github.io`.
+
+## 2026-05-12
+
+- Changed the `gread` query to `(is:starred OR is:unread) category:primary newer_than:7d`: surfaces both unread and starred primary messages from the last 7 days.
+- Dropped `is:unread` from the `gread` query: now lists all primary Gmail messages from the last 7 days, read or unread.
+
 ## 2026-05-08
 
 - Added `gread` to show unread primary Gmail messages for `gws` or `gwsb` with sender exclusions loaded from files.

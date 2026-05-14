@@ -8,8 +8,8 @@ Usage:
   gread gwsb
   gread --help
 
-Show unread primary Gmail messages from the last 7 days, excluding senders
-listed in global and profile-specific exclude files.
+Show starred or unread primary Gmail messages from the last 7 days,
+excluding senders listed in global and profile-specific exclude files.
 EOF
 }
 
@@ -58,7 +58,7 @@ else
   exit 1
 fi
 
-query_parts=("is:unread" "category:primary" "newer_than:7d")
+query_parts=("(is:starred OR is:unread)" "category:primary" "newer_than:7d")
 
 add_excludes() {
   local file="$1"
