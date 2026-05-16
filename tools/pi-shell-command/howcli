@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+VERSION="0.1.0"
+
 run=false
 debug=false
 cache=false
@@ -84,6 +86,10 @@ while [ "$#" -gt 0 ]; do
       cache=true
       shift
       ;;
+    --version)
+      printf 'howcli %s\n' "$VERSION"
+      exit 0
+      ;;
     -h|--help)
       break
       ;;
@@ -106,6 +112,7 @@ Usage:
   howcli --debug "natural language request"
   howcli -c "cache search"
   howcli --cache "cache search"
+  howcli --version
 
 By default, howcli prints the generated shell command and copies it to the system clipboard when available.
 Use --run to ask for confirmation and execute it.

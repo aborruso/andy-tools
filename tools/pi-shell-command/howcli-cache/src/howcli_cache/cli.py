@@ -11,6 +11,9 @@ from pathlib import Path
 from rapidfuzz import fuzz
 
 
+VERSION = "0.1.0"
+
+
 @dataclass
 class CacheRow:
     query_original: str
@@ -198,6 +201,7 @@ def clear(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="howcli-cache")
+    parser.add_argument("--version", action="version", version=f"howcli-cache {VERSION}")
     parser.add_argument("--db", type=Path, default=None, help="SQLite cache path")
     subparsers = parser.add_subparsers(dest="command", required=True)
 

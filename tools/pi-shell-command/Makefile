@@ -10,7 +10,7 @@ CLI_NAME ?= howcli
 .PHONY: install uninstall check
 
 install:
-	uv tool install --force ./howcli-cache
+	uv tool install --force --refresh --reinstall ./howcli-cache
 	$(INSTALL) -d "$(EXTENSION_DIR)"
 	$(INSTALL) -m 0644 shell-command.ts "$(EXTENSION_DIR)/$(EXTENSION_NAME)"
 	$(INSTALL) -d "$(BINDIR)"

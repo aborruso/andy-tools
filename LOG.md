@@ -2,6 +2,7 @@
 
 ## 2026-05-16
 
+- Added `howcli --version` and `howcli-cache --version` at version `0.1.0`, and made `make install` refresh/reinstall the Python cache CLI to avoid stale local builds.
 - Made `howcli` cache search show 5 fuzzy matches, print the full top command, and copy that command to the clipboard.
 - Refactored `howcli` cache logic into a dedicated `howcli-cache` Python CLI managed with `uv` and `rapidfuzz`.
 - Added a local SQLite cache to `howcli`, with `-c` / `--cache` to search previous generated commands without calling Pi.
