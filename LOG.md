@@ -1,5 +1,12 @@
 # LOG
 
+## 2026-05-16
+
+- Made `howcli` cache search show 5 fuzzy matches, print the full top command, and copy that command to the clipboard.
+- Refactored `howcli` cache logic into a dedicated `howcli-cache` Python CLI managed with `uv` and `rapidfuzz`.
+- Added a local SQLite cache to `howcli`, with `-c` / `--cache` to search previous generated commands without calling Pi.
+- Updated `howcli` to prefer recursive path searches and hide noisy stderr with `2>/dev/null` when appropriate, with `--debug` to keep errors visible.
+
 ## 2026-05-14
 
 - Added `md-gist`, a small Bash CLI to publish Markdown to GitHub Gist from a file or stdin, with optional copy, open, and raw URL output.

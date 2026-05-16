@@ -1,0 +1,15 @@
+[project]
+name = "howcli-cache"
+version = "0.1.0"
+description = "Local SQLite cache helper for howcli"
+requires-python = ">=3.10"
+dependencies = [
+  "rapidfuzz>=3.9",
+]
+
+[project.scripts]
+howcli-cache = "howcli_cache.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.7,<0.10.0"]
+build-backend = "uv_build"

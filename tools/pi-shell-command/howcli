@@ -2,6 +2,46 @@
 set -euo pipefail
 
 run=false
+debug=false
+cache=false
+
+cache_search() {
+  if ! command -v howcli-cache >/dev/null 2>&1; then
+    echo "Cache search requires howcli-cache. Run: make -C tools/pi-shell-command install" >&2
+    return 1
+  fi
+
+  local top_command status
+
+  if [ "$#" -eq 0 ] || [ -z "$*" ]; then
+    top_command="$(howcli-cache top 2>/dev/null || true)"
+    howcli-cache list
+    status=$?
+  else
+    top_command="$(howcli-cache top "$@" 2>/dev/null || true)"
+    howcli-cache search "$@"
+    status=$?
+  fi
+
+  if [ "$status" -eq 0 ] && [ -n "$top_command" ]; then
+    copy_to_clipboard "$top_command" || true
+  fi
+
+  return "$status"
+}
+
+cache_save() {
+  if ! command -v howcli-cache >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local debug_flag=()
+  if [ "$debug" = true ]; then
+    debug_flag=(--debug)
+  fi
+
+  howcli-cache save --query "$1" --command "$2" "${debug_flag[@]}" >/dev/null 2>&1 || true
+}
 
 copy_to_clipboard() {
   if command -v timeout >/dev/null 2>&1; then
@@ -30,44 +70,89 @@ copy_to_clipboard() {
   return 1
 }
 
+while [ "$#" -gt 0 ]; do
+  case "${1:-}" in
+    --run)
+      run=true
+      shift
+      ;;
+    --debug)
+      debug=true
+      shift
+      ;;
+    -c|--cache)
+      cache=true
+      shift
+      ;;
+    -h|--help)
+      break
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
 case "${1:-}" in
-  --run)
-    run=true
-    shift
-    ;;
   -h|--help)
     cat >&2 <<'EOF'
 Usage:
   howcli "natural language request"
   howcli --run "natural language request"
+  howcli --debug "natural language request"
+  howcli -c "cache search"
+  howcli --cache "cache search"
 
 By default, howcli prints the generated shell command and copies it to the system clipboard when available.
 Use --run to ask for confirmation and execute it.
+Use --debug to keep stderr visible in generated commands.
+Use -c or --cache to search previous generated commands without calling Pi.
 EOF
     exit 0
     ;;
 esac
+
+if [ "$cache" = true ]; then
+  set +e
+  cache_search "$@"
+  cache_status=$?
+  set -e
+  exit "$cache_status"
+fi
 
 if [ "$#" -eq 0 ]; then
   echo 'Usage: howcli "natural language request"' >&2
   exit 2
 fi
 
+request="$*"
+
+debug_flag=()
+if [ "$debug" = true ]; then
+  debug_flag=(--shell-command-debug)
+fi
+
 command="$(pi -p \
   --model openai-codex/gpt-5.4 \
   --shell-command \
+  "${debug_flag[@]}" \
   --no-session \
   --no-tools \
   --no-context-files \
   --no-skills \
   --no-prompt-templates \
-  "$*")"
+  "$request")"
 
 if [ -z "$command" ]; then
   echo "No command generated." >&2
   exit 1
 fi
 
+cache_save "$request" "$command"
 copy_to_clipboard "$command" || true
 
 printf '%s\n' "$command"
