@@ -2,6 +2,7 @@
 
 ## 2026-05-16
 
+- Added `tools/pi-shell-command/SPEC.md` with `howcli` requirements, architecture, cache schema, ranking, and installation notes.
 - Added `howcli --version` and `howcli-cache --version` at version `0.1.0`, and made `make install` refresh/reinstall the Python cache CLI to avoid stale local builds.
 - Made `howcli` cache search show 5 fuzzy matches, print the full top command, and copy that command to the clipboard.
 - Refactored `howcli` cache logic into a dedicated `howcli-cache` Python CLI managed with `uv` and `rapidfuzz`.

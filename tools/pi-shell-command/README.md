@@ -4,6 +4,8 @@ Pi extension that turns natural-language requests into shell commands.
 
 It is meant for non-interactive use: Pi prints the command to run, without executing it.
 
+For requirements, architecture, and cache schema details, see [SPEC.md](SPEC.md).
+
 ## Prerequisites
 
 Pi Coding Agent must be installed and configured before using this tool.
@@ -129,7 +131,8 @@ pi -p \
 - `howcli --debug` asks Pi not to add `2>/dev/null` to generated commands.
 - `howcli -c` / `howcli --cache` searches the local command cache using fuzzy matching and does not call Pi.
 - Cache search shows up to 5 matches, prints the full top-ranked command as the final `COMMAND:` line, and copies that command to the clipboard when possible.
-- `howcli-cache` is installed as a Python CLI with `uv tool install`.
+- `howcli --version` and `howcli-cache --version` print the installed versions.
+- `howcli-cache` is installed as a Python CLI with `uv tool install --refresh --reinstall`.
 - `make install` installs the Pi extension in `~/.pi/agent/extensions/` and the `howcli` command in `~/bin/`.
 - Make sure `~/bin` is in your `PATH`.
 - `--shell-command` activates the extension. Without it, the installed extension does nothing.
