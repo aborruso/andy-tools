@@ -1,5 +1,13 @@
 # LOG
 
+## 2026-05-17
+
+- Added `tools/bookmarklets/` section with a single README listing bookmarklets and readable sources in `src/`.
+- Added bookmarklet **Get GitHub RSS Feed**: shows the Atom feed URL for any GitHub file page.
+- Added bookmarklet **View in DeepWiki**: opens the current GitHub repo on deepwiki.com in a new tab.
+- Fixed **Get GitHub RSS Feed**: close button was broken (`innerHTML +=` wiped DOM listeners); added Copy button with "Copied!" feedback.
+- Fixed **View in DeepWiki**: regex now excludes `?` and `#` from repo name capture to avoid broken URLs on query-string GitHub pages.
+
 ## 2026-05-16
 
 - Added `tools/pi-shell-command/SPEC.md` with `howcli` requirements, architecture, cache schema, ranking, and installation notes.
