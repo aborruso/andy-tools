@@ -112,3 +112,11 @@ make -C tools/wopen uninstall BINDIR=/usr/local/bin
 - Files and URLs are delegated to PowerShell `Start-Process -FilePath`, so Windows chooses the default application.
 - With `-s`: opens a new Windows Terminal (`wt.exe`) in the given directory, or in the parent directory if a file is given. URLs and Windows paths are not supported with `-s`.
 - Error messages fail fast and suggest the next valid command.
+
+## Usage in non-interactive environments (AI agents, CI)
+
+`wopen` works reliably from non-interactive shells (e.g. Claude Code, scripts) with a plain call:
+
+```bash
+wopen /path/to/file
+```

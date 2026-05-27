@@ -151,5 +151,5 @@ if [[ -d "$input" ]]; then
   fi
   ( cd "$input" && explorer.exe . ) >/dev/null 2>&1 || true
 else
-  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" >/dev/null 2>&1 || true
+  cmd.exe /c start "" "$target" >/dev/null 2>&1 || true
 fi
