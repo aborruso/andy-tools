@@ -4,12 +4,16 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  gread gws
-  gread gwsb
+  gread gws [--exclude "pec,bic,cip"]
+  gread gwsb [--exclude "pec,bic,cip"]
   gread --help
 
 Show starred or unread primary Gmail messages from the last 7 days,
 excluding senders listed in global and profile-specific exclude files.
+
+Options:
+  -x, --exclude CSV   Additional comma-separated exclude patterns (partial match).
+                       E.g. -x "pec,bic,cip" adds -from:*pec* -from:*bic* -from:*cip*
 EOF
 }
 
@@ -18,20 +22,35 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   exit 0
 fi
 
-if [[ $# -ne 1 ]]; then
+profile=""
+extra_excludes=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -x|--exclude)
+      if [[ -z "${2:-}" ]]; then
+        echo "gread: --exclude requires an argument" >&2
+        exit 2
+      fi
+      extra_excludes="$2"
+      shift 2
+      ;;
+    gws|gwsb)
+      profile="$1"
+      shift
+      ;;
+    *)
+      echo "gread: unknown argument '$1'" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ -z "$profile" ]]; then
   usage >&2
   exit 2
 fi
-
-profile="$1"
-case "$profile" in
-  gws|gwsb) ;;
-  *)
-    echo "gread: unknown profile '$profile'" >&2
-    echo "gread: expected one of: gws, gwsb" >&2
-    exit 2
-    ;;
-esac
 
 if ! command -v "$profile" >/dev/null 2>&1; then
   echo "gread: command '$profile' not found in PATH" >&2
@@ -75,6 +94,16 @@ add_excludes() {
 
 add_excludes "$excludes_dir/global.txt"
 add_excludes "$excludes_dir/$profile.txt"
+
+# Add inline --exclude patterns (partial match: *pattern*)
+if [[ -n "$extra_excludes" ]]; then
+  IFS=',' read -ra parts <<< "$extra_excludes"
+  for part in "${parts[@]}"; do
+    part="${part## }"
+    part="${part%% }"
+    [[ -n "$part" ]] && query_parts+=("-from:*${part}*")
+  done
+fi
 
 query="${query_parts[*]}"
 
