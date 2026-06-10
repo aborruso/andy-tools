@@ -1,5 +1,10 @@
 # LOG
 
+## 2026-06-10
+
+- `gread`: fix sovrapposizione stelline/pallini — flag ora spaziati (`★ ●`), larghezza invariata.
+- `gread`: archiviare rimuove subito il messaggio dalla vista — aggiunto `in:inbox` alla query e rimozione ottimistica per `a`/`x`. Rimossi flag `arch` e import `isInInbox` (vestigiali con `in:inbox`).
+
 ## 2026-05-24
 
 - Added `tools/linux-cleanup/linux-cleanup.sh`: script per svuotare in sicurezza cache e /tmp su Linux/WSL2. Supporta `--dry-run` e `--no-sudo`. Usa comandi ufficiali (uv, go, pip, pnpm) dove disponibili. Include nota Optimize-VHD per compattare il VHDX su Windows.

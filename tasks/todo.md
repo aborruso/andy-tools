@@ -1,66 +1,33 @@
-# Cleanup Script Linux
+# gread — fix UI bugs
 
-## Analisi dell'ambiente
+## Bug 1 — stelline sovrapposte ai pallini
+- `flags` concatena `★●A` senza separazione; `★`/`●` sono glifi a larghezza ambigua → si toccano.
+- Fix: spaziare i flag → `${star} ${read}`. Width-neutral (resta 3 celle), `FLAGS_W` invariato.
 
-Disco al 97% (231G/251G). Spazio recuperabile stimato: ~3.5 GB sicuri senza toccare modelli AI.
+## Bug 2 — archiviato deve sparire dalla vista
+- Causa: nessuna rimozione ottimistica + query senza `in:inbox` (un non-letto archiviato resta `is:unread` → riappare al reload).
+- Fix A (`gmail.ts`): aggiungere `in:inbox` alla query → archiviare = uscire sempre dalla lista.
+- Fix B (`ui.tsx`): rimozione ottimistica immediata dei target per `a` (archive) e `x` (read+archive), con clamp del cursore.
 
-### Esclusi (modelli AI, non cache rigenerabile)
-- `~/.cache/whisper` — 2.0 GB — modelli Whisper (richiesta utente)
-- `~/.cache/qmd` — 2.2 GB — modelli GGUF per `qmd` (embedding + reranking)
+## Cleanup conseguente
+- Con `in:inbox` il flag `arch` (`A`) è sempre vuoto → rimuovere `arch` e l'import `isInInbox`.
 
-### Esclusi (sessione attiva)
-- `/tmp/claude-1000` — sessione Claude Code corrente
+## Note
+- `r`/`u`/`s` non toccati: il reload li gestisce; fuori scope (non segnalati).
 
-## Piano dello script
-
-### Sezione 1 — Cache utente (no sudo)
-
-| Path | Dimensione | Comando |
-|---|---|---|
-| `~/.cache/uv` | 2.2 GB | `uv cache clean` |
-| `~/.cache/go-build` | 674 MB | `go clean -cache` |
-| `~/.cache/ort.pyke.io` | 269 MB | `rm -rf` |
-| `~/.cache/printing-press` | 151 MB | `rm -rf` |
-| `~/.cache/ms-playwright-go` | 128 MB | `rm -rf` |
-| `~/.cache/ms-playwright` | 62 MB | `rm -rf` |
-| `~/.cache/node-gyp` | 56 MB | `rm -rf` |
-| `~/.cache/pyright-python` | 32 MB | `rm -rf` |
-| `~/.cache/opencode` | 30 MB | `rm -rf` |
-| `~/.cache/typescript` | 22 MB | `rm -rf` |
-| `~/.cache/pip` | 1.8 MB | `pip cache purge` |
-| `~/.cache/pnpm` | 1.1 MB | `pnpm store prune` |
-| `~/.cache/deno` | 9.5 MB | `rm -rf` |
-
-### Sezione 2 — /tmp (file vecchi >1 giorno, no claude-1000)
-
-File e dir in /tmp più vecchi di 1 giorno (escluso claude-1000).
-Stima: ~700 MB.
-
-### Sezione 3 — Sistema (richiede sudo)
-
-- `apt-get clean` → ~417 MB
-- `journalctl --vacuum-time=7d` → log journal compressi
-
-## Flag dello script
-
-- `--dry-run` — mostra cosa verrebbe rimosso senza agire
-- `--no-sudo` — salta la sezione sistema (sezione 3)
-
-## Nota WSL2
-
-Liberare spazio dentro WSL **non** compatta il file `ext4.vhdx` su Windows.
-Per recuperare spazio reale sul disco host: `Optimize-VHD` da PowerShell admin con WSL spento.
-
-## Domande aperte
-
-- `~/.cache/ort.pyke.io`: è ONNX Runtime, sicuro? Sì, si rigenera.
-- `~/.cache/printing-press`: tool locale, sicuro? Controllare se ha dati non rigenerabili.
-
----
+## Verifica
+- `make -C tools/gread check` (tsc --noEmit) deve passare.
 
 ## TODO
+- [x] gmail.ts: aggiungere `in:inbox`
+- [x] ui.tsx: rimozione ottimistica per `a` e `x`
+- [x] ui.tsx: spaziare i flag + rimuovere `arch`/`isInInbox`
+- [x] check tsc (exit 0)
 
-- [x] Chiedere conferma utente su questo piano
-- [x] Scrivere lo script `tools/linux-cleanup/linux-cleanup.sh`
-- [x] Testare in dry-run
-- [x] Aggiornare LOG.md
+## Review
+- `gmail.ts`: query ora include `in:inbox` → archiviare rimuove sempre dalla lista.
+- `ui.tsx`:
+  - `runAction` accetta `removeFromView`; `a` e `x` rimuovono i target subito da `messages` con clamp del cursore. Il reload async conferma poi dal server.
+  - flag spaziati `★ ●` (3 celle, width-neutral) → niente sovrapposizione.
+  - rimossi flag `arch` e import `isInInbox` (vestigiali con `in:inbox`).
+- Type-check OK. Verifica visiva a runtime ancora da fare con `gread gws/gwsb`.

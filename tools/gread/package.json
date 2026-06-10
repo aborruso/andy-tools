@@ -1,0 +1,28 @@
+{
+  "name": "gread",
+  "version": "1.0.0",
+  "description": "`gread` shows starred or unread primary Gmail messages from the last 7 days for one of two configured Google Workspace CLIs: `gws` or `gwsb`.",
+  "main": "src/index.tsx",
+  "bin": {
+    "gread": "./gread"
+  },
+  "scripts": {
+    "start": "tsx src/index.tsx gws",
+    "check": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "ink": "^4.4.1",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "@types/react": "^19.2.17",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}
