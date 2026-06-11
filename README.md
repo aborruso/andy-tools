@@ -12,3 +12,4 @@ A personal collection of small tools for practical tasks, automation, and everyd
 | `md-gist` | Publish Markdown quickly to GitHub Gist from a file or stdin, with optional copy/open/raw output helpers. | [README](tools/md-gist/README.md) |
 | `bookmarklets` | Browser bookmarklets for GitHub and other productivity tasks. | [README](tools/bookmarklets/README.md) |
 | `linux-cleanup` | Safely clean cache and temp files on Linux/WSL2 (`~/.cache`, `/tmp`, apt). Supports `--dry-run` and `--no-sudo`. | [script](tools/linux-cleanup/linux-cleanup.sh) |
+| `stale-repos` | List abandoned, bulky git repos (no recent commit/edit, over a size threshold; dirty repos excluded) as candidates to move/archive. List-only. | [README](tools/stale-repos/README.md) |

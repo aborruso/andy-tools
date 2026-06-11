@@ -1,33 +1,41 @@
-# gread — fix UI bugs
+# Tool: stale-repos — trova repo git abbandonati e ingombranti
 
-## Bug 1 — stelline sovrapposte ai pallini
-- `flags` concatena `★●A` senza separazione; `★`/`●` sono glifi a larghezza ambigua → si toccano.
-- Fix: spaziare i flag → `${star} ${read}`. Width-neutral (resta 3 celle), `FLAGS_W` invariato.
+## Obiettivo
+Listare cartelle git abbandonate (candidate allo spostamento) sul disco WSL ext4.
 
-## Bug 2 — archiviato deve sparire dalla vista
-- Causa: nessuna rimozione ottimistica + query senza `in:inbox` (un non-letto archiviato resta `is:unread` → riappare al reload).
-- Fix A (`gmail.ts`): aggiungere `in:inbox` alla query → archiviare = uscire sempre dalla lista.
-- Fix B (`ui.tsx`): rimozione ottimistica immediata dei target per `a` (archive) e `x` (read+archive), con clamp del cursore.
+## Criterio
+Un repo è candidato se TUTTE le condizioni valgono:
+- nessun commit recente (`git log --all --since`)
+- nessun file sorgente modificato di recente (mtime, escludendo build/deps)
+- dimensione > soglia (`du -sx`)
+- NON dirty (modifiche non committate → escluso per sicurezza)
 
-## Cleanup conseguente
-- Con `in:inbox` il flag `arch` (`A`) è sempre vuoto → rimuovere `arch` e l'import `isInInbox`.
+## Parametri
+- `-d/--days` (default 180)
+- `-s/--size-mb` (default 100)
+- `-r/--root` (default $HOME)
+
+## Fasi
+- [x] Script `tools/stale-repos/stale-repos.sh`
+- [x] Discovery repo: `find -xdev` con prune dir pesanti, cerca `.git`
+- [x] Gate in ordine: commit recente → mtime recente → dirty → size
+- [x] Output ordinato per dimensione + totale recuperabile
+- [x] README del tool
+- [x] Riga nel README principale
+- [x] Test su disco reale (solo lettura)
 
 ## Note
-- `r`/`u`/`s` non toccati: il reload li gestisce; fuori scope (non segnalati).
-
-## Verifica
-- `make -C tools/gread check` (tsc --noEmit) deve passare.
-
-## TODO
-- [x] gmail.ts: aggiungere `in:inbox`
-- [x] ui.tsx: rimozione ottimistica per `a` e `x`
-- [x] ui.tsx: spaziare i flag + rimuovere `arch`/`isInInbox`
-- [x] check tsc (exit 0)
+- `-xdev` esclude automaticamente /mnt e mount 9p (filesystem diversi)
+- Prune: node_modules .venv venv target build dist .next .cache __pycache__ .git
+- Solo lista, mai sposta
 
 ## Review
-- `gmail.ts`: query ora include `in:inbox` → archiviare rimuove sempre dalla lista.
-- `ui.tsx`:
-  - `runAction` accetta `removeFromView`; `a` e `x` rimuovono i target subito da `messages` con clamp del cursore. Il reload async conferma poi dal server.
-  - flag spaziati `★ ●` (3 celle, width-neutral) → niente sovrapposizione.
-  - rimossi flag `arch` e import `isInInbox` (vestigiali con `in:inbox`).
-- Type-check OK. Verifica visiva a runtime ancora da fare con `gread gws/gwsb`.
+- Discovery: due liste di prune separate. Bug iniziale: `.git` nella lista di
+  discovery → potato prima di essere stampato (0 repo). Risolto separando
+  `PRUNE_BUILD` (discovery) da prune+`.git` (check mtime).
+- Gate in ordine di costo: commit (veloce) → mtime con `-quit` (esce al 1° hit)
+  → dirty (`status --porcelain`) → `du -sx` solo sui finalisti.
+- `--all` su git log così conta i branch non-HEAD; repo senza commit gestiti.
+- Test reale su `~`: 428 repo in ~36s → 23 candidati, 11.4 GB recuperabili.
+- Solo elenco, nessuna azione distruttiva.
+- Possibili estensioni future: flag `--json`, `--move DIR` opzionale.
