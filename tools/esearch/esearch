@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+#
+# esearch — thin wrapper around the Everything search CLI (es.exe).
+#
+# Turns plain words into Everything glob patterns (*word*) so you can type:
+#     esearch report 2024 xlsx
+# and get the equivalent of:
+#     es.exe *report* *2024* *xlsx*
+#
+# Anything that already looks like a flag (-x) or an Everything search term
+# containing a path separator (foo:bar, C:\...) is passed through unchanged.
+#
+# Output is re-encoded from the Windows OEM codepage (cp850) to UTF-8.
+
+set -euo pipefail
+
+ES_PATH="${ESEARCH_ES_PATH:-/mnt/c/Programmi/Everything/es.exe}"
+FROM_ENC="${ESEARCH_FROM_ENC:-cp850}"
+TO_ENC="${ESEARCH_TO_ENC:-utf-8}"
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  esearch [es-options] <query...>
+  esearch --help
+
+Search files on Windows with Everything (es.exe).
+
+Each plain query token is split on whitespace and wrapped as a glob pattern
+(*word*). Flags and tokens containing ':' (paths, Everything terms) are passed
+through verbatim.
+
+Options:
+  --es-path <path>   Path to es.exe (default: $ESEARCH_ES_PATH or
+                     /mnt/c/Programmi/Everything/es.exe).
+  --from-enc <enc>   Source encoding (default: cp850, env: ESEARCH_FROM_ENC).
+  --to-enc <enc>     Target encoding (default: utf-8, env: ESEARCH_TO_ENC).
+  --raw              Disable query rewriting: pass all tokens verbatim.
+  --no-iconv         Skip the cp850 -> utf-8 conversion.
+  -h, --help         Show this help.
+
+Environment:
+  ESEARCH_ES_PATH    Override the es.exe location.
+  ESEARCH_FROM_ENC   Override the source encoding (default cp850).
+  ESEARCH_TO_ENC     Override the target encoding (default utf-8).
+
+Examples:
+  esearch report 2024 xlsx
+  esearch *.csv path:C:\Users
+  esearch -r -n 20 invoice
+  esearch --raw whole-path:"C:\Data\file.txt"
+USAGE
+}
+
+# --- parse our own options --------------------------------------------------
+raw=0
+iconv=1
+args=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --raw)
+      raw=1
+      shift
+      ;;
+    --no-iconv)
+      iconv=0
+      shift
+      ;;
+    --es-path)
+      [[ $# -ge 2 ]] || { echo "esearch: --es-path requires an argument" >&2; exit 2; }
+      ES_PATH="$2"
+      shift 2
+      ;;
+    --es-path=*)
+      ES_PATH="${1#--es-path=}"
+      shift
+      ;;
+    --from-enc)
+      [[ $# -ge 2 ]] || { echo "esearch: --from-enc requires an argument" >&2; exit 2; }
+      FROM_ENC="$2"
+      shift 2
+      ;;
+    --from-enc=*)
+      FROM_ENC="${1#--from-enc=}"
+      shift
+      ;;
+    --to-enc)
+      [[ $# -ge 2 ]] || { echo "esearch: --to-enc requires an argument" >&2; exit 2; }
+      TO_ENC="$2"
+      shift 2
+      ;;
+    --to-enc=*)
+      TO_ENC="${1#--to-enc=}"
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+# anything after -- is verbatim
+while [[ $# -gt 0 ]]; do
+  args+=("$1")
+  shift
+done
+
+if [[ ! -x "$ES_PATH" ]]; then
+  echo "esearch: es.exe not found or not executable at: $ES_PATH" >&2
+  echo "         set it via --es-path <path> or ESEARCH_ES_PATH" >&2
+  exit 127
+fi
+
+# --- build the es.exe argument list ----------------------------------------
+es_args=()
+
+if [[ "$raw" -eq 1 ]]; then
+  for token in "${args[@]+"${args[@]}"}"; do
+    es_args+=("$token")
+  done
+else
+  # es.exe options that consume the following token as their value.
+  # These must be passed through verbatim (no *word* wrapping).
+  # Source: es.exe --help
+  readonly -a VALUE_OPTS=(
+    -n -path -output -sort -load-settings -save-settings
+    -instance -startup -close -display -duration -highlight -font
+    -case -whole-word -regex -wholefilename
+  )
+  expects_value=0
+  for token in "${args[@]+"${args[@]}"}"; do
+    if (( expects_value )); then
+      # value of a preceding es.exe option -> verbatim
+      es_args+=("$token")
+      expects_value=0
+    elif [[ "$token" == -* || "$token" == *:* ]]; then
+      # flag or path-like / Everything term -> verbatim
+      es_args+=("$token")
+      # does this option consume a following value?
+      for opt in "${VALUE_OPTS[@]}"; do
+        if [[ "$token" == "$opt" ]]; then
+          expects_value=1
+          break
+        fi
+      done
+    else
+      # split on whitespace and wrap each word as *word*
+      # shellcheck disable=SC2086
+      for word in $token; do
+        es_args+=("*${word}*")
+      done
+    fi
+  done
+fi
+
+# --- run -------------------------------------------------------------------
+if [[ "$iconv" -eq 1 ]]; then
+  "$ES_PATH" "${es_args[@]+"${es_args[@]}"}" | iconv -f "$FROM_ENC" -t "$TO_ENC"
+else
+  exec "$ES_PATH" "${es_args[@]+"${es_args[@]}"}"
+fi
