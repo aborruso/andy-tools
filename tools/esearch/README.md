@@ -18,6 +18,12 @@ It also re-encodes the output from the Windows OEM codepage (cp850) to UTF-8, so
 
 The tool is designed to be useful both for humans working in a shell and for AI agents that need a simple, non-interactive way to search files on the Windows side via Everything.
 
+## Why Everything
+
+[Everything](https://www.voidtools.com/) is a Windows desktop search engine that maintains a real-time index of every file and folder on all NTFS drives. Because it indexes the filesystem at the MFT level rather than scanning directories, searches are near-instantaneous even across millions of files — results appear in milliseconds regardless of drive size.
+
+The index is global and always up to date: there is no need to run a crawl or wait for a scheduled scan. This makes it a reliable foundation for any workflow that needs to locate files quickly, from the shell or from an AI agent, without knowing in advance where a file might be stored.
+
 ## Requirements
 
 - [Everything](https://www.voidtools.com/) installed and running on Windows.
