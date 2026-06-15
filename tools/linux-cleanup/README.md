@@ -25,8 +25,6 @@ bash linux-cleanup.sh [--dry-run] [--no-sudo]
 | `~/.cache/pip` | `pip cache purge` |
 | `~/.cache/pnpm` | `pnpm store prune` |
 | `~/.cache/ort.pyke.io` | `rm -rf` |
-| `~/.cache/ms-playwright-go` | `rm -rf` |
-| `~/.cache/ms-playwright` | `rm -rf` |
 | `~/.cache/node-gyp` | `rm -rf` |
 | `~/.cache/pyright-python` | `rm -rf` |
 | `~/.cache/opencode` | `rm -rf` |

@@ -144,7 +144,7 @@ if [ "$debug" = true ]; then
 fi
 
 command="$(pi -p \
-  --model openai-codex/gpt-5.4 \
+  --model openai-codex/gpt-5.5 \
   --shell-command \
   "${debug_flag[@]}" \
   --no-session \

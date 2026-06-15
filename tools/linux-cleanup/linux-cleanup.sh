@@ -107,8 +107,9 @@ fi
 
 # Directory rimosse direttamente
 clean_dir ~/.cache/ort.pyke.io       "ONNX Runtime cache"
-clean_dir ~/.cache/ms-playwright-go  "Playwright Go browser binaries"
-clean_dir ~/.cache/ms-playwright     "Playwright browser binaries"
+# Playwright esclusi di proposito: cancellarli costringe a riscaricare i browser
+# clean_dir ~/.cache/ms-playwright-go  "Playwright Go browser binaries"
+# clean_dir ~/.cache/ms-playwright     "Playwright browser binaries"
 clean_dir ~/.cache/node-gyp          "node-gyp build cache"
 clean_dir ~/.cache/pyright-python    "Pyright Python cache"
 clean_dir ~/.cache/opencode          "OpenCode cache"
