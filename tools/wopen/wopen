@@ -6,6 +6,7 @@ usage() {
 Usage:
   wopen [file|directory|url]
   wopen -s [file|directory]
+  wopen -c <file>
   wopen --help
 
 Open a file, directory, or URL from WSL/Linux with Windows.
@@ -18,6 +19,7 @@ Behavior:
   - URLs are opened with the default Windows handler, usually the browser.
   - With -s: opens a new Windows Terminal in the target directory.
     If a file is given, opens the terminal in its parent directory.
+  - With -c: copies the file content to the Windows clipboard (files only).
 
 Examples:
   wopen
@@ -30,11 +32,13 @@ Examples:
   wopen -s
   wopen -s /home/user/projects
   wopen -s info.md
+  wopen -c info.md
+  wopen -c /home/user/notes.txt
 
 Agent-friendly notes:
   - Non-interactive: never prompts for input.
   - With no arguments, opens the current directory, like `wopen .`.
-  - Requires at most one argument (plus optional -s flag).
+  - Requires at most one argument (plus optional -s or -c flag).
   - Fails fast with an actionable error when a path or required command is missing.
 
 Exit codes:
@@ -44,10 +48,29 @@ Exit codes:
 USAGE
 }
 
+is_url() {
+  [[ "$1" =~ ^[A-Za-z][A-Za-z0-9+.-]*:// ]]
+}
+
+is_windows_path() {
+  [[ "$1" =~ ^[A-Za-z]:[\\/] ]] || [[ "$1" =~ ^\\\\ ]]
+}
+
 shell_mode=false
+copy_mode=false
+
+if [[ ( ${1:-} == "-s" && ( ${2:-} == "-c" || ${2:-} == "--copy" ) ) || \
+      ( ( ${1:-} == "-c" || ${1:-} == "--copy" ) && ${2:-} == "-s" ) ]]; then
+  echo "wopen: error: -c and -s cannot be used together." >&2
+  echo "Run: wopen --help" >&2
+  exit 2
+fi
 
 if [[ ${1:-} == "-s" ]]; then
   shell_mode=true
+  shift
+elif [[ ${1:-} == "-c" || ${1:-} == "--copy" ]]; then
+  copy_mode=true
   shift
 fi
 
@@ -64,20 +87,12 @@ if [[ "$input" == "-h" || "$input" == "--help" ]]; then
   exit 0
 fi
 
-if ! command -v powershell.exe >/dev/null 2>&1; then
+if ! $copy_mode && ! command -v powershell.exe >/dev/null 2>&1; then
   echo "wopen: error: powershell.exe not found." >&2
   echo "This tool must run inside WSL with Windows interop enabled." >&2
   echo "Run: wopen --help" >&2
   exit 1
 fi
-
-is_url() {
-  [[ "$1" =~ ^[A-Za-z][A-Za-z0-9+.-]*:// ]]
-}
-
-is_windows_path() {
-  [[ "$1" =~ ^[A-Za-z]:[\\/] ]] || [[ "$1" =~ ^\\\\ ]]
-}
 
 if $shell_mode; then
   if is_url "$input" || is_windows_path "$input"; then
@@ -110,6 +125,32 @@ if $shell_mode; then
 
   windir=$(wslpath -w "$dir")
   wt.exe -d "$windir" >/dev/null 2>&1 || true
+  exit 0
+fi
+
+if $copy_mode; then
+  if is_url "$input" || is_windows_path "$input"; then
+    echo "wopen: error: -c does not support URLs or Windows paths." >&2
+    exit 2
+  fi
+
+  if [[ -d "$input" ]]; then
+    echo "wopen: error: -c does not support directories." >&2
+    exit 2
+  fi
+
+  if [[ ! -f "$input" ]]; then
+    echo "wopen: error: file not found: $input" >&2
+    exit 1
+  fi
+
+  if ! command -v clip.exe >/dev/null 2>&1; then
+    echo "wopen: error: clip.exe not found." >&2
+    echo "Required to copy file content to Windows clipboard." >&2
+    exit 1
+  fi
+
+  clip.exe < "$input"
   exit 0
 fi
 

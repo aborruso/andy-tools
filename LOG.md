@@ -3,6 +3,7 @@
 ## 2026-07-13
 
 - Added `tools/projump/`: Citty-based `projump-path` CLI that discovers git repositories under home with `fd` (fallback `find`), sorts them by project folder creation time, shows the newest 20 in an interactive selector, and prints the selected path for a shell `projump` cd wrapper. Default results now hide tool/cache repositories under hidden paths (for example `~/.gemini/...`) and dot-prefixed project folders; `--all` includes them.
+- Added `wopen -c <file>` to copy local WSL file content to the Windows clipboard via `clip.exe`, with README and root index updates.
 
 ## 2026-06-15
 

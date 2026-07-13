@@ -11,6 +11,7 @@ The tool is designed to be useful both for humans working in a shell and for AI 
 ```bash
 wopen [file|directory|url]
 wopen -s [file|directory]
+wopen -c <file>
 wopen --help
 ```
 
@@ -27,6 +28,8 @@ wopen https://example.com
 wopen -s
 wopen -s /home/user/projects
 wopen -s info.md
+wopen -c info.md
+wopen -c /home/user/notes.txt
 ```
 
 ## Install
@@ -105,12 +108,13 @@ make -C tools/wopen uninstall BINDIR=/usr/local/bin
 
 - Non-interactive: never prompts for input.
 - With no arguments, opens the current directory, like `wopen .`.
-- Requires at most one argument (plus optional `-s` flag).
+- Requires at most one argument (plus optional `-s` or `-c` flag).
 - Linux/WSL paths are converted with `wslpath -w`.
 - Linux/WSL directories, including paths like `/mnt/c/Users/...`, are opened with `explorer.exe`.
 - Windows paths are passed through unchanged.
 - Files and URLs are delegated to PowerShell `Start-Process -FilePath`, so Windows chooses the default application.
 - With `-s`: opens a new Windows Terminal (`wt.exe`) in the given directory, or in the parent directory if a file is given. URLs and Windows paths are not supported with `-s`.
+- With `-c`: copies the content of a file to the Windows clipboard via `clip.exe`. Works only with local WSL files — directories, URLs, and Windows paths are not supported.
 - Error messages fail fast and suggest the next valid command.
 
 ## Usage in non-interactive environments (AI agents, CI)
