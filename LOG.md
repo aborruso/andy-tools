@@ -1,5 +1,9 @@
 # LOG
 
+## 2026-07-13
+
+- Added `tools/projump/`: Citty-based `projump-path` CLI that discovers git repositories under home with `fd` (fallback `find`), sorts them by project folder creation time, shows the newest 20 in an interactive selector, and prints the selected path for a shell `projump` cd wrapper. Default results now hide tool/cache repositories under hidden paths (for example `~/.gemini/...`) and dot-prefixed project folders; `--all` includes them.
+
 ## 2026-06-15
 
 - Added `tools/esearch/`: wrapper bash per Everything `es.exe` (WSL). Le parole plain diventano glob `*word*`; flag e token con `:` passano invariati; output riconvertito da cp850 a UTF-8. Opzioni `--es-path`, `--from-enc`/`--to-enc`, `--raw`, `--no-iconv` + varianti env. Le opzioni `es.exe` che prendono un valore (`-n`, `-path`, ...) sono passate verbatim con il loro argomento (no wrapping).

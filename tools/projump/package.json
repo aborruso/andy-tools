@@ -1,0 +1,17 @@
+{
+  "name": "projump",
+  "version": "0.1.0",
+  "description": "Jump to recently created git project folders under home.",
+  "type": "module",
+  "bin": {
+    "projump-path": "./projump-path"
+  },
+  "scripts": {
+    "check": "node --check src/index.js"
+  },
+  "dependencies": {
+    "citty": "^0.1.6"
+  },
+  "devDependencies": {},
+  "license": "ISC"
+}
