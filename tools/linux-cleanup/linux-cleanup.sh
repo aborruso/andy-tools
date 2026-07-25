@@ -6,15 +6,25 @@ set -euo pipefail
 
 DRY_RUN=false
 NO_SUDO=false
+TMP_DAYS=7
 
 for arg in "$@"; do
     case $arg in
         --dry-run) DRY_RUN=true ;;
         --no-sudo) NO_SUDO=true ;;
+        --tmp-days)
+            shift
+            TMP_DAYS="$1"
+            shift
+            continue ;;
+        --tmp-days=*)
+            TMP_DAYS="${arg#*=}"
+            ;;
         --help|-h)
-            echo "Uso: $0 [--dry-run] [--no-sudo]"
-            echo "  --dry-run   Mostra cosa verrebbe rimosso senza agire"
-            echo "  --no-sudo   Salta la sezione che richiede sudo (apt, journal)"
+            echo "Uso: $0 [--dry-run] [--no-sudo] [--tmp-days N]"
+            echo "  --dry-run     Mostra cosa verrebbe rimosso senza agire"
+            echo "  --no-sudo     Salta la sezione che richiede sudo (apt, journal)"
+            echo "  --tmp-days N  Giorni oltre i quali cancellare file in /tmp (default: 7)"
             exit 0 ;;
         *) echo "Opzione sconosciuta: $arg"; exit 1 ;;
     esac
@@ -117,7 +127,7 @@ clean_dir ~/.cache/typescript        "TypeScript language server cache"
 clean_dir ~/.cache/deno              "Deno cache"
 
 # ════════════════════════════════════════════════════════════════════════════
-section "/tmp — file temporanei (>1 giorno)"
+section "/tmp — file temporanei (>$TMP_DAYS giorni)"
 
 # Escludi la sessione Claude attiva e i socket dbus in uso
 TMP_FREED=0
@@ -131,7 +141,7 @@ while IFS= read -r item; do
         rm -rf "$item" 2>/dev/null || { echo -e "  ${YELLOW}(skip, permesso negato)${NC} $item"; continue; }
         TMP_FREED=$(( TMP_FREED + size ))
     fi
-done < <(find /tmp -maxdepth 1 -mtime +1 \
+done < <(find /tmp -maxdepth 1 -mtime +${TMP_DAYS} \
     ! -name "claude-*" \
     ! -name ".org.chromium*" \
     ! -name "dbus-*" \

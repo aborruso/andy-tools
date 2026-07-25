@@ -5,13 +5,14 @@ Safely clean cache and temporary files on Linux/WSL2.
 ## Usage
 
 ```bash
-bash linux-cleanup.sh [--dry-run] [--no-sudo]
+bash linux-cleanup.sh [--dry-run] [--no-sudo] [--tmp-days N]
 ```
 
 | Flag | Description |
 |---|---|
 | `--dry-run` | Show what would be removed without making any changes |
 | `--no-sudo` | Skip the system section (apt, journal) that requires sudo |
+| `--tmp-days N` | Delete files in `/tmp` older than N days (default: 7) |
 
 ## What it cleans
 
@@ -31,9 +32,9 @@ bash linux-cleanup.sh [--dry-run] [--no-sudo]
 | `~/.cache/typescript` | `rm -rf` |
 | `~/.cache/deno` | `rm -rf` |
 
-### `/tmp` — files older than 1 day
+### `/tmp` — files older than N days (default 7)
 
-Removes files and directories in `/tmp` older than 1 day. Skips:
+Removes files and directories in `/tmp` older than the configured threshold. Linux automatically cleans `/tmp` via `systemd-tmpfiles` at 10 days, so values between 7 and 10 avoid redundant work. Skips:
 - `claude-*` — active Claude Code session
 - `dbus-*`, `*.sock` — system sockets
 - `.org.chromium*` — Chromium lock files
