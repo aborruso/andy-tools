@@ -94,6 +94,19 @@ require_powershell() {
   fi
 }
 
+open_via_powershell() {
+  local action="$1"
+  local target="$2"
+  set +e
+  output=$(powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" 2>&1)
+  status=$?
+  set -e
+  if [[ $status -ne 0 ]]; then
+    report_windows_failure "$action" "powershell.exe" "$status" "$output"
+    exit 1
+  fi
+}
+
 shell_mode=false
 copy_mode=false
 
@@ -201,29 +214,13 @@ fi
 
 if is_url "$input"; then
   require_powershell
-  target=$input
-  set +e
-  output=$(powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" 2>&1)
-  status=$?
-  set -e
-  if [[ $status -ne 0 ]]; then
-    report_windows_failure "open URL" "powershell.exe" "$status" "$output"
-    exit 1
-  fi
+  open_via_powershell "open URL" "$input"
   exit 0
 fi
 
 if is_windows_path "$input"; then
   require_powershell
-  target=$input
-  set +e
-  output=$(powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" 2>&1)
-  status=$?
-  set -e
-  if [[ $status -ne 0 ]]; then
-    report_windows_failure "open Windows path" "powershell.exe" "$status" "$output"
-    exit 1
-  fi
+  open_via_powershell "open Windows path" "$input"
   exit 0
 fi
 

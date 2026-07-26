@@ -4,6 +4,7 @@
 
 - `tools/projump`: sort key ora `max(birthtime cartella, reflog HEAD, committerdate refs)` invece della sola data di creazione. I progetti attivi (es. `la-tasca`, creato a aprile ma committato ieri) non sparivano più dal top-20.
 - `tools/wopen`: il pre-check `powershell.exe` bloccava anche i casi che non lo usano (directory via `explorer.exe`, file via `cmd.exe`). Spostato in una funzione `require_powershell` richiamata solo dai rami URL e Windows path.
+- `tools/wopen`: dedupe dei rami URL e Windows path, identici tranne l'azione; estratta `open_via_powershell <action> <target>`.
 
 ## 2026-07-13
 
