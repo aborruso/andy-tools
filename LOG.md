@@ -1,5 +1,9 @@
 # LOG
 
+## 2026-07-26
+
+- `tools/projump`: sort key ora `max(birthtime cartella, reflog HEAD, committerdate refs)` invece della sola data di creazione. I progetti attivi (es. `la-tasca`, creato a aprile ma committato ieri) non sparivano più dal top-20.
+
 ## 2026-07-13
 
 - Added `tools/projump/`: Citty-based `projump-path` CLI that discovers git repositories under home with `fd` (fallback `find`), sorts them by project folder creation time, shows the newest 20 in an interactive selector, and prints the selected path for a shell `projump` cd wrapper. Default results now hide tool/cache repositories under hidden paths (for example `~/.gemini/...`) and dot-prefixed project folders; `--all` includes them.

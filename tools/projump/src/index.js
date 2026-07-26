@@ -50,7 +50,7 @@ const command = defineCommand({
       .map((repoPath) => toRepo(repoPath))
       .filter(Boolean)
       .filter((repo) => includeAll || isVisibleProject(repo.path))
-      .sort((a, b) => b.createdMs - a.createdMs)
+      .sort((a, b) => b.sortMs - a.sortMs)
       .slice(0, limit);
 
     if (repos.length === 0) {
@@ -132,11 +132,47 @@ function toRepo(gitDir) {
   const repoPath = path.dirname(gitDir);
   try {
     const stat = fs.statSync(repoPath);
-    const createdMs = stat.birthtimeMs > 0 ? stat.birthtimeMs : stat.mtimeMs;
-    return { path: repoPath, createdMs };
+    const birthMs = stat.birthtimeMs > 0 ? stat.birthtimeMs : stat.mtimeMs;
+    const sortMs = Math.max(birthMs, gitActivityMs(repoPath));
+    return { path: repoPath, sortMs };
   } catch {
     return null;
   }
+}
+
+function gitActivityMs(repoPath) {
+  let best = 0;
+
+  const reflog = runGit(repoPath, ["reflog", "-n1", "--format=%ct"]);
+  best = Math.max(best, parseUnixSeconds(reflog));
+
+  const commit = runGit(repoPath, [
+    "for-each-ref",
+    "--sort=-committerdate",
+    "--count=1",
+    "--format=%(committerdate:unix)",
+    "refs/heads",
+    "refs/remotes",
+  ]);
+  best = Math.max(best, parseUnixSeconds(commit));
+
+  return best;
+}
+
+function runGit(repoPath, gitArgs) {
+  const result = spawnSync("git", ["-C", repoPath, ...gitArgs], {
+    encoding: "utf8",
+    timeout: 2000,
+  });
+  if (result.status !== 0) return "";
+  return (result.stdout || "").trim();
+}
+
+function parseUnixSeconds(text) {
+  if (!text) return 0;
+  const seconds = Number.parseInt(text, 10);
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return seconds * 1000;
 }
 
 function isVisibleProject(repoPath) {
@@ -218,7 +254,7 @@ async function selectRepo(repos, root) {
 
 function buildRows(repos, selectedIndex, root) {
   const rows = [
-    `Select a project (${repos.length} newest by folder creation time)`,
+    `Select a project (${repos.length} newest by activity)`,
     "↑/k ↓/j move · Enter select · q/Esc cancel",
     "",
   ];
@@ -226,7 +262,7 @@ function buildRows(repos, selectedIndex, root) {
   for (let i = 0; i < repos.length; i++) {
     const repo = repos[i];
     const marker = i === selectedIndex ? "›" : " ";
-    const date = new Date(repo.createdMs).toISOString().slice(0, 10);
+    const date = new Date(repo.sortMs).toISOString().slice(0, 10);
     const label = `${date}  ${prettyPath(repo.path, root)}`;
     rows.push(i === selectedIndex ? `${marker} \x1b[1m${label}\x1b[0m` : `${marker} ${label}`);
   }

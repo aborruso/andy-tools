@@ -2,7 +2,7 @@
 
 Jump to one of the most recently created git project folders under your home directory.
 
-`projump-path` is the installable CLI. It scans for git repositories, shows the 20 newest by folder creation time, and prints only the selected path.
+`projump-path` is the installable CLI. It scans for git repositories, shows the 20 most recently active, and prints only the selected path.
 
 A shell function named `projump` can then use that path to `cd` in the current shell.
 
@@ -60,7 +60,7 @@ projump
 - Searches for `.git` directories under `~` by default.
 - By default, hides tool/cache repositories under hidden paths such as `~/.gemini/...` and project folders whose name starts with `.`.
 - Use `--all` to include hidden/tool-managed repositories.
-- Sorts repositories by the creation time of the project folder, newest first.
+- Sorts repositories by the most recent of: folder creation time, latest `git reflog` entry, and latest commit timestamp across local and remote branches. This keeps actively-worked projects on top even when their folder was created long ago.
 
 ## Install
 
