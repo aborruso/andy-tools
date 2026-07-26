@@ -56,6 +56,44 @@ is_windows_path() {
   [[ "$1" =~ ^[A-Za-z]:[\\/] ]] || [[ "$1" =~ ^\\\\ ]]
 }
 
+report_windows_failure() {
+  local action="$1"
+  local program="$2"
+  local status="$3"
+  local output="${4:-}"
+
+  echo "wopen: error: failed to ${action} via ${program}." >&2
+
+  if [[ $status -eq 126 ]] || [[ "$output" == *"Exec format error"* ]]; then
+    echo "Windows executable was found but could not run from this session." >&2
+    if [[ -n "${WSL_INTEROP:-}" ]]; then
+      echo "WSL interop appears configured (WSL_INTEROP is set), but this process cannot launch Windows binaries." >&2
+    else
+      echo "WSL interop does not appear to be available in this session (WSL_INTEROP is not set)." >&2
+    fi
+    return
+  fi
+
+  if [[ $status -eq 127 ]] || [[ "$output" == *"command not found"* ]]; then
+    echo "${program} is not runnable from PATH in this session." >&2
+    return
+  fi
+
+  if [[ -n "$output" ]]; then
+    echo "$output" >&2
+  fi
+  echo "This environment may not allow Windows interop from the current session." >&2
+}
+
+require_powershell() {
+  if ! command -v powershell.exe >/dev/null 2>&1; then
+    echo "wopen: error: powershell.exe not found." >&2
+    echo "This tool must run inside WSL with Windows interop enabled." >&2
+    echo "Run: wopen --help" >&2
+    exit 1
+  fi
+}
+
 shell_mode=false
 copy_mode=false
 
@@ -85,13 +123,6 @@ input=${1:-.}
 if [[ "$input" == "-h" || "$input" == "--help" ]]; then
   usage
   exit 0
-fi
-
-if ! $copy_mode && ! command -v powershell.exe >/dev/null 2>&1; then
-  echo "wopen: error: powershell.exe not found." >&2
-  echo "This tool must run inside WSL with Windows interop enabled." >&2
-  echo "Run: wopen --help" >&2
-  exit 1
 fi
 
 if $shell_mode; then
@@ -124,7 +155,14 @@ if $shell_mode; then
   fi
 
   windir=$(wslpath -w "$dir")
-  wt.exe -d "$windir" >/dev/null 2>&1 || true
+  set +e
+  output=$(wt.exe -d "$windir" 2>&1)
+  status=$?
+  set -e
+  if [[ $status -ne 0 ]]; then
+    report_windows_failure "open Windows Terminal" "wt.exe" "$status" "$output"
+    exit 1
+  fi
   exit 0
 fi
 
@@ -150,19 +188,42 @@ if $copy_mode; then
     exit 1
   fi
 
-  clip.exe < "$input"
+  set +e
+  output=$(clip.exe < "$input" 2>&1)
+  status=$?
+  set -e
+  if [[ $status -ne 0 ]]; then
+    report_windows_failure "copy content" "clip.exe" "$status" "$output"
+    exit 1
+  fi
   exit 0
 fi
 
 if is_url "$input"; then
+  require_powershell
   target=$input
-  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" >/dev/null 2>&1 || true
+  set +e
+  output=$(powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" 2>&1)
+  status=$?
+  set -e
+  if [[ $status -ne 0 ]]; then
+    report_windows_failure "open URL" "powershell.exe" "$status" "$output"
+    exit 1
+  fi
   exit 0
 fi
 
 if is_windows_path "$input"; then
+  require_powershell
   target=$input
-  powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" >/dev/null 2>&1 || true
+  set +e
+  output=$(powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" 2>&1)
+  status=$?
+  set -e
+  if [[ $status -ne 0 ]]; then
+    report_windows_failure "open Windows path" "powershell.exe" "$status" "$output"
+    exit 1
+  fi
   exit 0
 fi
 
@@ -190,7 +251,24 @@ if [[ -d "$input" ]]; then
     echo "Run: wopen --help" >&2
     exit 1
   fi
-  ( cd "$input" && explorer.exe . ) >/dev/null 2>&1 || true
+  set +e
+  output=$(cd "$input" && explorer.exe . 2>&1)
+  status=$?
+  set -e
+  # explorer.exe returns exit code 1 even on success under WSL, so a bare
+  # non-zero status is not reliable. Only treat it as a failure when there is
+  # a genuine interop error signature (126/127 or non-empty error output).
+  if [[ $status -ne 0 && ( $status -eq 126 || $status -eq 127 || -n "$output" ) ]]; then
+    report_windows_failure "open directory" "explorer.exe" "$status" "$output"
+    exit 1
+  fi
 else
-  cmd.exe /c start "" "$target" >/dev/null 2>&1 || true
+  set +e
+  output=$(cmd.exe /c start "" "$target" 2>&1)
+  status=$?
+  set -e
+  if [[ $status -ne 0 ]]; then
+    report_windows_failure "open file" "cmd.exe" "$status" "$output"
+    exit 1
+  fi
 fi
