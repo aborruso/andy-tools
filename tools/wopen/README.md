@@ -110,7 +110,7 @@ make -C tools/wopen uninstall BINDIR=/usr/local/bin
 - With no arguments, opens the current directory, like `wopen .`.
 - Requires at most one argument (plus optional `-s` or `-c` flag).
 - Linux/WSL paths are converted with `wslpath -w`.
-- Linux/WSL directories, including paths like `/mnt/c/Users/...`, are opened with `explorer.exe`.
+- Linux/WSL directories, including paths like `/mnt/c/Users/...`, are opened with `explorer.exe`. Note that `explorer.exe` returns exit code `1` even on success, so `wopen` does not treat that as a failure and only reports a real error when Windows interop is genuinely unavailable.
 - Windows paths are passed through unchanged.
 - Files and URLs are delegated to PowerShell `Start-Process -FilePath`, so Windows chooses the default application.
 - With `-s`: opens a new Windows Terminal (`wt.exe`) in the given directory, or in the parent directory if a file is given. URLs and Windows paths are not supported with `-s`.
