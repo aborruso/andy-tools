@@ -1,5 +1,9 @@
 # LOG
 
+## 2026-07-28
+
+- `tools/projump` 0.3.0: fuzzy search nel selettore — digitando si filtra su **tutti** i repo in cache (sottosequenza case-insensitive, bonus per caratteri consecutivi e inizio segmento), migliore match in cima accanto al cursore, tie-break per attività recente. Riga query nell'header, `Esc` svuota la query poi annulla, `Ctrl+C` annulla sempre; rimossi `j`/`k`/`q` (confliggono con la digitazione). Default `--limit` da 20 a 40.
+
 ## 2026-07-27
 
 - `tools/projump`: cache su file in `${XDG_CACHE_HOME:-~/.cache}/projump/`, una per combinazione `--root` + `--all`. Si salva la lista completa ordinata, lo slice a `--limit` avviene in lettura. Scrittura atomica (tmp + rename), TTL 24 h, path spariti filtrati alla lettura.

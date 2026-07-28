@@ -2,7 +2,7 @@
 
 Jump to one of the most recently created git project folders under your home directory.
 
-`projump-path` is the installable CLI. It scans for git repositories, shows the 20 most recently active, and prints only the selected path.
+`projump-path` is the installable CLI. It scans for git repositories, shows the 40 most recently active with a type-to-filter fuzzy search, and prints only the selected path.
 
 A shell function named `projump` can then use that path to `cd` in the current shell.
 
@@ -19,7 +19,7 @@ projump-path --live
 | Option | Description |
 | --- | --- |
 | `-r`, `--root` | Root directory to scan (default `~`) |
-| `-n`, `--limit` | Number of repositories to show (default 20) |
+| `-n`, `--limit` | Maximum number of repositories to show (default 40) |
 | `-a`, `--all` | Include hidden/tool-managed repositories |
 | `-l`, `--live` | Ignore the cache, rescan now and refresh the cache |
 | `--refresh-only` | Rescan and update the cache without showing the selector |
@@ -28,10 +28,20 @@ Keyboard shortcuts:
 
 | Key | Action |
 | --- | --- |
-| `↑` / `k` | Move up |
-| `↓` / `j` | Move down |
+| any printable char | Add to the fuzzy query |
+| `Backspace` | Delete the last query character |
+| `↑` / `↓` | Move up / down |
 | `Enter` | Print selected path |
-| `q` / `Esc` | Cancel |
+| `Esc` | Clear the query; if already empty, cancel |
+| `Ctrl+C` | Cancel |
+
+## Fuzzy search
+
+Just start typing to filter: the query matches repository paths as a case-insensitive subsequence (`andytools` matches `~/git/idee/andy-tools`), with bonuses for consecutive characters and matches at the start of a path segment or word.
+
+- The search runs over **all** cached repositories, not just the ones on screen, so you can reach old projects too.
+- Results are sorted by match score (tie-break: most recent activity) and capped at `--limit`; the best match is always at the top, next to the cursor.
+- With an empty query the list is the usual "newest by activity" view.
 
 ## Shell function
 

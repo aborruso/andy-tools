@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { defineCommand, runMain } from "citty";
 
-const VERSION = "0.2.0";
+const VERSION = "0.3.0";
 const CACHE_VERSION = 1;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const CACHE_REFRESH_AFTER_MS = 10 * 60 * 1000;
@@ -34,8 +34,8 @@ const command = defineCommand({
     limit: {
       type: "string",
       alias: "n",
-      default: "20",
-      description: "Number of recent repositories to show.",
+      default: "40",
+      description: "Maximum number of repositories to show.",
     },
     all: {
       type: "boolean",
@@ -90,7 +90,7 @@ const command = defineCommand({
       return;
     }
 
-    const selected = await selectRepo(repos.slice(0, limit), root, fromCache);
+    const selected = await selectRepo(repos, root, fromCache, limit);
     if (!selected) {
       process.exitCode = 130;
       return;
@@ -313,7 +313,28 @@ function isVisibleProject(repoPath) {
     .every((part) => !part.startsWith("."));
 }
 
-async function selectRepo(repos, root, fromCache) {
+function fuzzyScore(query, text) {
+  const haystack = text.toLowerCase();
+  let score = 0;
+  let searchFrom = 0;
+  let previousMatch = -2;
+
+  for (const char of query.toLowerCase()) {
+    const found = haystack.indexOf(char, searchFrom);
+    if (found === -1) return null;
+
+    if (found === previousMatch + 1) score += 5;
+    else if (found === 0 || "/-_. ".includes(haystack[found - 1])) score += 10;
+    else score += 1;
+
+    previousMatch = found;
+    searchFrom = found + 1;
+  }
+
+  return score - haystack.length * 0.01;
+}
+
+async function selectRepo(repos, root, fromCache, limit) {
   if (!process.stdin.isTTY) {
     console.error("projump-path: interactive selection requires a TTY");
     return null;
@@ -321,8 +342,24 @@ async function selectRepo(repos, root, fromCache) {
 
   const input = process.stdin;
   const output = process.stderr;
+  let query = "";
+  let filtered = repos.slice(0, limit);
   let index = 0;
   let renderedLines = 0;
+
+  const applyFilter = () => {
+    if (query === "") {
+      filtered = repos.slice(0, limit);
+    } else {
+      filtered = repos
+        .map((repo) => ({ repo, score: fuzzyScore(query, prettyPath(repo.path, root)) }))
+        .filter((entry) => entry.score !== null)
+        .sort((a, b) => b.score - a.score || b.repo.sortMs - a.repo.sortMs)
+        .slice(0, limit)
+        .map((entry) => entry.repo);
+    }
+    index = 0;
+  };
 
   readline.emitKeypressEvents(input);
   input.setRawMode(true);
@@ -344,32 +381,57 @@ async function selectRepo(repos, root, fromCache) {
         output.write("\x1b[J");
       }
 
-      const rows = buildRows(repos, index, root, fromCache);
+      const rows = buildRows(filtered, index, root, fromCache, query, repos.length);
       renderedLines = rows.length;
       output.write(rows.join("\n"));
       output.write("\n");
     };
 
-    const onKeypress = (_str, key) => {
-      if (key?.name === "up" || key?.name === "k") {
-        index = (index - 1 + repos.length) % repos.length;
-        render();
-        return;
-      }
-
-      if (key?.name === "down" || key?.name === "j") {
-        index = (index + 1) % repos.length;
-        render();
+    const onKeypress = (str, key) => {
+      if (key?.ctrl && key?.name === "c") {
+        cleanup(null);
         return;
       }
 
       if (key?.name === "return" || key?.name === "enter") {
-        cleanup(repos[index]);
+        if (filtered.length > 0) cleanup(filtered[index]);
         return;
       }
 
-      if (key?.name === "escape" || key?.name === "q" || (key?.ctrl && key?.name === "c")) {
-        cleanup(null);
+      if (key?.name === "escape") {
+        if (query === "") {
+          cleanup(null);
+          return;
+        }
+        query = "";
+        applyFilter();
+        render();
+        return;
+      }
+
+      if (key?.name === "up") {
+        if (filtered.length > 0) index = (index - 1 + filtered.length) % filtered.length;
+        render();
+        return;
+      }
+
+      if (key?.name === "down") {
+        if (filtered.length > 0) index = (index + 1) % filtered.length;
+        render();
+        return;
+      }
+
+      if (key?.name === "backspace") {
+        query = query.slice(0, -1);
+        applyFilter();
+        render();
+        return;
+      }
+
+      if (str && str.length === 1 && str >= " " && str !== "\x7f" && !key?.ctrl && !key?.meta) {
+        query += str;
+        applyFilter();
+        render();
       }
     };
 
@@ -378,16 +440,23 @@ async function selectRepo(repos, root, fromCache) {
   });
 }
 
-function buildRows(repos, selectedIndex, root, fromCache) {
+function buildRows(filtered, selectedIndex, root, fromCache, query, total) {
   const source = fromCache ? "cached, -l to rescan" : "fresh scan";
+  const status = query === "" ? `${filtered.length} newest by activity` : `${filtered.length}/${total} match`;
   const rows = [
-    `Select a project (${repos.length} newest by activity · ${source})`,
-    "↑/k ↓/j move · Enter select · q/Esc cancel",
+    `Select a project (${status} · ${source})`,
+    "type to filter · ↑/↓ move · Enter select · Esc clear/cancel",
+    `\x1b[36m>\x1b[0m ${query}\x1b[7m \x1b[0m`,
     "",
   ];
 
-  for (let i = 0; i < repos.length; i++) {
-    const repo = repos[i];
+  if (filtered.length === 0) {
+    rows.push("  \x1b[2mno match\x1b[0m");
+    return rows;
+  }
+
+  for (let i = 0; i < filtered.length; i++) {
+    const repo = filtered[i];
     const marker = i === selectedIndex ? "›" : " ";
     const date = new Date(repo.sortMs).toISOString().slice(0, 10);
     const label = `${date}  ${prettyPath(repo.path, root)}`;

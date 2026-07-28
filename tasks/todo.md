@@ -1,60 +1,38 @@
-# projump — cache per avvio istantaneo
+# projump — lista a 40 + fuzzy search
 
-## Problema (misurato)
+## Contesto
 
-`projump-path` su `~` impiega ~6,2 s:
+Il selettore attuale mostra i primi 20 repo per attività; navigazione con ↑/k ↓/j, uscita con q/Esc. Richiesta: default a 40 item e filtro fuzzy digitando, con il match migliore adiacente al cursore (in cima).
 
-- `fd` a caldo: ~1,2 s (440 directory `.git`)
-- resto (~5 s): 784 `spawnSync` di `git` seriali — `reflog -n1` + `for-each-ref` per ognuno dei 392 repo visibili
+## Fase 1 — default a 40
 
-Il pre-filtro dei nascosti prima di git non serve (440 → 392, guadagno trascurabile). Il costo è intrinseco alla scansione: va evitata, non ottimizzata.
+- [x] `limit` default da `"20"` a `"40"` in `src/index.js`
+- [x] Aggiornare la descrizione dell'opzione e il README del tool
 
-## Fase 1 — cache su file
+## Fase 2 — fuzzy search nel selettore
 
-- [x] File cache: `${XDG_CACHE_HOME:-~/.cache}/projump/<hash(root+all)>.json`
-- [x] Formato: `{ version, generatedAt, root, all, repos: [{ path, sortMs }] }`
-- [x] Chiave = `root` + `all`, **non** `limit`: si salva la lista completa ordinata, lo slice a `--limit` avviene in lettura
-- [x] `version` bumpato se cambia la forma del record → cache vecchia ignorata, non crash
-- [x] Scrittura atomica: `<file>.tmp` + `fs.renameSync`
-- [x] In lettura: filtro `fs.existsSync` sui path (repo cancellati/rinominati non devono comparire né far fallire il `cd`)
-- [x] Cache miss / corrotta / versione diversa → scansione live + scrittura cache
+- [x] Scorer fuzzy senza dipendenze (~30 righe): match a sottosequenza sul path "pretty", bonus per caratteri consecutivi e per inizio segmento/parola
+- [x] Digitando si filtra la lista; risultati ordinati per score (tie-break: attività recente); il migliore in cima, cursore che riparte da 0 → l'elemento più "fuzzy" è sempre adiacente al cursore
+- [x] Riga query visibile nell'header (es. `> quer_`)
+- [x] Tasti: caratteri stampabili → query · Backspace cancella · ↑/↓ navigano · Enter seleziona · Esc svuota la query se piena, altrimenti annulla · Ctrl+C annulla sempre
+- [x] Rimuovere `j`/`k` (navigazione) e `q` (uscita): confliggono con la digitazione
+- [x] A query vuota: comportamento identico a oggi (lista per attività)
 
-## Fase 2 — `--live` / `-l`
+## Fase 3 — documentazione (prima del commit)
 
-- [x] Flag booleano `live`, alias `-l` (nessuna collisione con `-r`, `-n`, `-a`)
-- [x] Ignora la cache, riscansiona **e riscrive** la cache
-- [x] `--live` è anche il modo documentato per invalidare la cache a mano
-
-## Fase 3 — freschezza
-
-- [x] TTL (default 24 h) come rete di sicurezza: oltre il TTL si riscansiona
-- [x] Refresh in background: si mostra subito la lista da cache, poi si rilancia la scansione staccata (`spawn(..., { detached: true, stdio: "ignore" })` + `child.unref()`) che riscrive la cache per il lancio successivo
-- [x] Verifica del detach cronometrando **la funzione shell `projump`**, non `node src/index.js`
-
-## Fase 4 — documentazione (prima del commit)
-
-- [x] `tools/projump/README.md`: sezione "Cache" + tabella opzioni con `--live` e `--refresh-only`
-- [x] README principale: riga projump aggiornata
+- [x] `tools/projump/README.md`: nuovi tasti, default 40, sezione fuzzy
+- [x] README principale: riga projump se serve
 - [x] `LOG.md`: voce datata
-
-## Fase 5 — git in parallelo
-
-- [x] `execFile` + pool di 16 al posto di `spawnSync` seriale; ordinamento invariato
-- [x] Le due chiamate git per repo (`reflog`, `for-each-ref`) girano anch'esse in parallelo
-
-Da **non** fare: sostituire git con `fs.stat` su `.git/logs/HEAD` — regredirebbe l'ordinamento per attività introdotto in 39db5cb.
 
 ## Decisioni prese
 
-1. Cache in `${XDG_CACHE_HOME:-~/.cache}/projump/` (non `/tmp`: sopravvive al riavvio WSL)
-2. TTL 24 h
-3. Refresh in background: sì
-4. Git in parallelo (Fase 5): dentro scope
+1. Fuzzy su **tutta** la lista in cache, risultati mostrati max `limit` (confermato dall'utente)
+2. Rimossi `j`/`k`/`q` (confermato dall'utente); restano ↑/↓, Enter, Esc, Ctrl+C
+3. Versione 0.2.0 → 0.3.0
 
 ## Review
 
-- Risultato su `~` (440 `.git`, 392 visibili): funzione shell `projump` da **6,2 s a 0,062 s** con cache calda; scansione live da 6,2 s a **2,7 s** (di cui 1,2 s è `fd`, il resto git).
-- Il refresh in background parte solo se la cache ha più di 10 minuti (`CACHE_REFRESH_AFTER_MS`): senza questa soglia ogni singolo `projump` lancerebbe una scansione completa dell'intera home.
-- `--refresh-only` è il meccanismo del refresh in background (il processo staccato richiama se stesso con quel flag) ed è anche utile a mano per pre-scaldare la cache.
-- Test eseguiti: cache calda 56 ms; refresh staccato che non blocca il wrapper shell (0,062 s con bg refresh attivo) e che riscrive davvero il file; `--live` che riscrive `generatedAt`; cache separate per `--root` e `--all`; repo cancellato che sparisce dalla lista letta da cache senza riscansione; selettore interattivo verificato su pty.
-- Non testato: cache corrotta/versione futura (percorso coperto dai `try/catch` e dal check `version`, ma senza test dedicato).
+- Scorer fuzzy senza dipendenze: sottosequenza case-insensitive greedy con bonus (consecutivo +5, inizio segmento/parola +10, altrimenti +1) e penalità 0,01/carattere sulla lunghezza del path per preferire i path corti a parità di score.
+- Test su pty: "andytools"+Enter seleziona `~/git/idee/andy-tools` (match a sottosequenza attraverso il trattino); query senza match mostra "no match" e ignora Enter; primo Esc svuota la query, secondo Esc esce con 130; ↓↓↑+Enter a query vuota seleziona il secondo repo per attività.
+- Nota readline: un Esc solitario viene emesso da Node dopo ~500 ms (timeout interno per distinguere le sequenze escape) e con `meta: true`; l'handler controlla solo `key.name === "escape"`, quindi funziona. Due Esc a meno di 500 ms l'uno dall'altro vengono fusi in un solo evento: in quel caso serve un terzo Esc per uscire — limite noto e accettato.
+- `node --check` pulito; nessuna nuova dipendenza.
