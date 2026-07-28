@@ -13,7 +13,16 @@ projump-path
 projump-path --limit 20
 projump-path --root ~/git
 projump-path --all
+projump-path --live
 ```
+
+| Option | Description |
+| --- | --- |
+| `-r`, `--root` | Root directory to scan (default `~`) |
+| `-n`, `--limit` | Number of repositories to show (default 20) |
+| `-a`, `--all` | Include hidden/tool-managed repositories |
+| `-l`, `--live` | Ignore the cache, rescan now and refresh the cache |
+| `--refresh-only` | Rescan and update the cache without showing the selector |
 
 Keyboard shortcuts:
 
@@ -61,6 +70,19 @@ projump
 - By default, hides tool/cache repositories under hidden paths such as `~/.gemini/...` and project folders whose name starts with `.`.
 - Use `--all` to include hidden/tool-managed repositories.
 - Sorts repositories by the most recent of: folder creation time, latest `git reflog` entry, and latest commit timestamp across local and remote branches. This keeps actively-worked projects on top even when their folder was created long ago.
+- Runs the `git` probes concurrently (16 repositories at a time), so a full scan of ~400 repositories takes a couple of seconds instead of six.
+
+## Cache
+
+The scan result is cached, so a normal run starts in a few milliseconds instead of seconds.
+
+- Location: `${XDG_CACHE_HOME:-~/.cache}/projump/<key>.json`, one file per `--root` + `--all` combination.
+- The full sorted list is cached; `--limit` is applied when reading, so changing `-n` never needs a rescan.
+- Repositories that no longer exist on disk are dropped when the cache is read.
+- TTL: 24 hours. Past that, the next run rescans.
+- If the cache is older than 10 minutes, the list is still shown immediately from cache and a detached background process refreshes it for the next run.
+- To force a rescan: `projump --live` (or `-l`). Deleting the cache directory works too.
+- `projump-path --refresh-only` updates the cache without opening the selector — useful to warm it up from a shell startup file or a cron job.
 
 ## Install
 

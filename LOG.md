@@ -1,5 +1,12 @@
 # LOG
 
+## 2026-07-27
+
+- `tools/projump`: cache su file in `${XDG_CACHE_HOME:-~/.cache}/projump/`, una per combinazione `--root` + `--all`. Si salva la lista completa ordinata, lo slice a `--limit` avviene in lettura. Scrittura atomica (tmp + rename), TTL 24 h, path spariti filtrati alla lettura.
+- `tools/projump`: nuovo `--live`/`-l` (ignora la cache, riscansiona e riscrive) e `--refresh-only` (aggiorna la cache senza selettore). Se la cache ha più di 10 minuti, la lista si mostra subito da cache e un processo staccato (`detached` + `stdio: ignore` + `unref`) rigenera per il lancio successivo.
+- `tools/projump`: le due chiamate `git` per repo ora sono concorrenti (`execFile` + pool di 16) invece che seriali. Erano 784 `spawnSync` su 392 repo, ~5 s dei 6,2 s totali.
+- Misure su `~` (440 `.git`, 392 visibili): funzione shell `projump` da 6,2 s a 0,06 s con cache calda; scansione live da 6,2 s a 2,7 s.
+
 ## 2026-07-26
 
 - `tools/projump`: sort key ora `max(birthtime cartella, reflog HEAD, committerdate refs)` invece della sola data di creazione. I progetti attivi (es. `la-tasca`, creato a aprile ma committato ieri) non sparivano più dal top-20.

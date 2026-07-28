@@ -1,12 +1,22 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
+import { execFile, spawn, spawnSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { defineCommand, runMain } from "citty";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
+const CACHE_VERSION = 1;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const CACHE_REFRESH_AFTER_MS = 10 * 60 * 1000;
+const GIT_CONCURRENCY = 16;
+
+const execFileAsync = promisify(execFile);
+const SELF = fileURLToPath(import.meta.url);
 
 const command = defineCommand({
   meta: {
@@ -33,11 +43,24 @@ const command = defineCommand({
       default: false,
       description: "Include hidden/tool-managed repositories.",
     },
+    live: {
+      type: "boolean",
+      alias: "l",
+      default: false,
+      description: "Ignore the cache, rescan now and refresh the cache.",
+    },
+    "refresh-only": {
+      type: "boolean",
+      default: false,
+      description: "Rescan and update the cache without showing the selector.",
+    },
   },
   async run({ args }) {
     const root = expandHome(String(args.root ?? "~"));
     const limit = parsePositiveInt(args.limit, "--limit");
     const includeAll = Boolean(args.all);
+    const live = Boolean(args.live);
+    const refreshOnly = Boolean(args["refresh-only"]);
 
     if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
       console.error(`projump-path: root is not a directory: ${root}`);
@@ -45,13 +68,21 @@ const command = defineCommand({
       return;
     }
 
-    console.error(`Scanning ${prettyPath(root)} for git repositories...`);
-    const repos = findGitRepos(root)
-      .map((repoPath) => toRepo(repoPath))
-      .filter(Boolean)
-      .filter((repo) => includeAll || isVisibleProject(repo.path))
-      .sort((a, b) => b.sortMs - a.sortMs)
-      .slice(0, limit);
+    const cacheFile = cachePath(root, includeAll);
+
+    if (refreshOnly) {
+      writeCache(cacheFile, root, includeAll, await scanRepos(root, includeAll));
+      return;
+    }
+
+    let repos = live ? null : readCache(cacheFile, root, includeAll);
+    const fromCache = repos !== null;
+
+    if (!fromCache) {
+      console.error(`Scanning ${prettyPath(root)} for git repositories...`);
+      repos = await scanRepos(root, includeAll);
+      writeCache(cacheFile, root, includeAll, repos);
+    }
 
     if (repos.length === 0) {
       console.error(`projump-path: no git repositories found under ${root}`);
@@ -59,7 +90,7 @@ const command = defineCommand({
       return;
     }
 
-    const selected = await selectRepo(repos, root);
+    const selected = await selectRepo(repos.slice(0, limit), root, fromCache);
     if (!selected) {
       process.exitCode = 130;
       return;
@@ -84,6 +115,100 @@ function parsePositiveInt(value, name) {
     process.exit(2);
   }
   return parsed;
+}
+
+function cacheDir() {
+  const base = process.env.XDG_CACHE_HOME || path.join(os.homedir(), ".cache");
+  return path.join(base, "projump");
+}
+
+function cachePath(root, includeAll) {
+  const key = crypto.createHash("sha1").update(`${root}\0${includeAll}`).digest("hex").slice(0, 16);
+  return path.join(cacheDir(), `${key}.json`);
+}
+
+function readCache(cacheFile, root, includeAll) {
+  let record;
+  try {
+    record = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
+  } catch {
+    return null;
+  }
+
+  if (record?.version !== CACHE_VERSION) return null;
+  if (record.root !== root || record.all !== includeAll) return null;
+  if (!Array.isArray(record.repos)) return null;
+
+  const age = Date.now() - Number(record.generatedAt ?? 0);
+  if (!(age >= 0) || age > CACHE_TTL_MS) return null;
+
+  const repos = record.repos.filter((repo) => repo?.path && fs.existsSync(repo.path));
+  if (repos.length === 0) return null;
+
+  if (age > CACHE_REFRESH_AFTER_MS) refreshInBackground(root, includeAll);
+
+  return repos;
+}
+
+function writeCache(cacheFile, root, includeAll, repos) {
+  if (repos.length === 0) return;
+
+  const record = {
+    version: CACHE_VERSION,
+    generatedAt: Date.now(),
+    root,
+    all: includeAll,
+    repos,
+  };
+
+  const tmpFile = `${cacheFile}.${process.pid}.tmp`;
+  try {
+    fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
+    fs.writeFileSync(tmpFile, `${JSON.stringify(record)}\n`);
+    fs.renameSync(tmpFile, cacheFile);
+  } catch (error) {
+    try {
+      fs.rmSync(tmpFile, { force: true });
+    } catch {}
+    console.error(`projump-path: could not write cache (${error.message})`);
+  }
+}
+
+function refreshInBackground(root, includeAll) {
+  try {
+    const child = spawn(
+      process.execPath,
+      [SELF, "--refresh-only", "--root", root, ...(includeAll ? ["--all"] : [])],
+      { detached: true, stdio: "ignore" },
+    );
+    child.unref();
+  } catch {}
+}
+
+async function scanRepos(root, includeAll) {
+  const repoPaths = findGitRepos(root)
+    .map((gitDir) => path.dirname(gitDir))
+    .filter((repoPath) => includeAll || isVisibleProject(repoPath));
+
+  const repos = await mapLimit(repoPaths, GIT_CONCURRENCY, toRepo);
+
+  return repos.filter(Boolean).sort((a, b) => b.sortMs - a.sortMs);
+}
+
+async function mapLimit(items, limit, worker) {
+  const results = new Array(items.length);
+  let next = 0;
+
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const index = next++;
+      if (index >= items.length) return;
+      results[index] = await worker(items[index]);
+    }
+  });
+
+  await Promise.all(runners);
+  return results;
 }
 
 function findGitRepos(root) {
@@ -128,44 +253,45 @@ function lines(text) {
   return text.split("\n").map((line) => line.trim()).filter(Boolean);
 }
 
-function toRepo(gitDir) {
-  const repoPath = path.dirname(gitDir);
+async function toRepo(repoPath) {
+  let stat;
   try {
-    const stat = fs.statSync(repoPath);
-    const birthMs = stat.birthtimeMs > 0 ? stat.birthtimeMs : stat.mtimeMs;
-    const sortMs = Math.max(birthMs, gitActivityMs(repoPath));
-    return { path: repoPath, sortMs };
+    stat = fs.statSync(repoPath);
   } catch {
     return null;
   }
+
+  const birthMs = stat.birthtimeMs > 0 ? stat.birthtimeMs : stat.mtimeMs;
+  const sortMs = Math.max(birthMs, await gitActivityMs(repoPath));
+  return { path: repoPath, sortMs };
 }
 
-function gitActivityMs(repoPath) {
-  let best = 0;
-
-  const reflog = runGit(repoPath, ["reflog", "-n1", "--format=%ct"]);
-  best = Math.max(best, parseUnixSeconds(reflog));
-
-  const commit = runGit(repoPath, [
-    "for-each-ref",
-    "--sort=-committerdate",
-    "--count=1",
-    "--format=%(committerdate:unix)",
-    "refs/heads",
-    "refs/remotes",
+async function gitActivityMs(repoPath) {
+  const [reflog, commit] = await Promise.all([
+    runGit(repoPath, ["reflog", "-n1", "--format=%ct"]),
+    runGit(repoPath, [
+      "for-each-ref",
+      "--sort=-committerdate",
+      "--count=1",
+      "--format=%(committerdate:unix)",
+      "refs/heads",
+      "refs/remotes",
+    ]),
   ]);
-  best = Math.max(best, parseUnixSeconds(commit));
 
-  return best;
+  return Math.max(parseUnixSeconds(reflog), parseUnixSeconds(commit));
 }
 
-function runGit(repoPath, gitArgs) {
-  const result = spawnSync("git", ["-C", repoPath, ...gitArgs], {
-    encoding: "utf8",
-    timeout: 2000,
-  });
-  if (result.status !== 0) return "";
-  return (result.stdout || "").trim();
+async function runGit(repoPath, gitArgs) {
+  try {
+    const { stdout } = await execFileAsync("git", ["-C", repoPath, ...gitArgs], {
+      encoding: "utf8",
+      timeout: 2000,
+    });
+    return (stdout || "").trim();
+  } catch {
+    return "";
+  }
 }
 
 function parseUnixSeconds(text) {
@@ -187,7 +313,7 @@ function isVisibleProject(repoPath) {
     .every((part) => !part.startsWith("."));
 }
 
-async function selectRepo(repos, root) {
+async function selectRepo(repos, root, fromCache) {
   if (!process.stdin.isTTY) {
     console.error("projump-path: interactive selection requires a TTY");
     return null;
@@ -218,7 +344,7 @@ async function selectRepo(repos, root) {
         output.write("\x1b[J");
       }
 
-      const rows = buildRows(repos, index, root);
+      const rows = buildRows(repos, index, root, fromCache);
       renderedLines = rows.length;
       output.write(rows.join("\n"));
       output.write("\n");
@@ -252,9 +378,10 @@ async function selectRepo(repos, root) {
   });
 }
 
-function buildRows(repos, selectedIndex, root) {
+function buildRows(repos, selectedIndex, root, fromCache) {
+  const source = fromCache ? "cached, -l to rescan" : "fresh scan";
   const rows = [
-    `Select a project (${repos.length} newest by activity)`,
+    `Select a project (${repos.length} newest by activity · ${source})`,
     "↑/k ↓/j move · Enter select · q/Esc cancel",
     "",
   ];
