@@ -1,0 +1,22 @@
+[
+  {"id": "01", "query": "lista i file della cartella corrente", "command": "ls"},
+  {"id": "02", "query": "lista tutti i file, anche nascosti, con dettagli", "command": "ls -la"},
+  {"id": "03", "query": "trova tutti i file csv sotto la cartella corrente", "command": "find . -type f -name '*.csv' 2>/dev/null"},
+  {"id": "04", "query": "trova tutti i file piu grandi di 100 MB sotto la cartella corrente", "command": "find . -type f -size +100M 2>/dev/null"},
+  {"id": "05", "query": "cerca errore nei file txt", "command": "grep -R \"errore\" . --include='*.txt' 2>/dev/null"},
+  {"id": "06", "query": "cerca la parola TODO nei file python", "command": "grep -R \"TODO\" . --include='*.py' 2>/dev/null"},
+  {"id": "07", "query": "conta le righe di file.csv", "command": "wc -l file.csv"},
+  {"id": "08", "query": "mostra le prime 20 righe di file.csv", "command": "head -n 20 file.csv"},
+  {"id": "09", "query": "mostra le ultime 50 righe di log.txt", "command": "tail -n 50 log.txt"},
+  {"id": "10", "query": "scompatta archivio.zip", "command": "unzip archivio.zip"},
+  {"id": "11", "query": "scompatta archivio.zip in una cartella output", "command": "unzip archivio.zip -d output"},
+  {"id": "12", "query": "comprimi la cartella progetti in progetti.tar.gz", "command": "tar -czf progetti.tar.gz progetti"},
+  {"id": "13", "query": "comprimi la cartella foto in un archivio zip", "command": "zip -r foto.zip foto"},
+  {"id": "14", "query": "ordina le email in email.txt e rimuovi i duplicati", "command": "sort -u email.txt"},
+  {"id": "15", "query": "conta quante volte compare la parola errore in log.txt", "command": "grep -c \"errore\" log.txt", "soft": true, "note": "ambigua: grep -c conta le righe, grep -o ... | wc -l conta le occorrenze — entrambe valide"},
+  {"id": "16", "query": "elenca i processi che usano piu CPU", "command": "ps aux --sort=-%cpu | head -n 10", "soft": true, "note": "varianti valide: top -b -n 1, ps -eo ..."},
+  {"id": "17", "query": "mostra lo spazio occupato dalle cartelle qui dentro", "command": "du -sh */ 2>/dev/null"},
+  {"id": "18", "query": "trova i file modificati negli ultimi 7 giorni", "command": "find . -type f -mtime -7 2>/dev/null"},
+  {"id": "19", "query": "scarica https://example.com/file.zip come file.zip", "command": "curl -L -o file.zip https://example.com/file.zip", "soft": true, "note": "varianti valide: wget -O file.zip ..."},
+  {"id": "20", "query": "cancella tutti i file .tmp sotto la cartella corrente", "command": "find . -type f -name '*.tmp' 2>/dev/null", "soft": true, "note": "richiesta distruttiva: il prompt preferisce la variante non distruttiva (elenco), ma -delete/rm con conferma sono accettabili"}
+]

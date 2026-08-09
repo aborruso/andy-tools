@@ -25,11 +25,14 @@ cache.sqlite        # Local SQLite cache
 - Disable tools, context files, skills, and prompt templates for predictable non-interactive output.
 - Print only the generated command.
 - Copy the generated command to the clipboard when a supported clipboard command is available.
+- `HOWCLI_MODEL` overrides the model passed to Pi (`--model`), default `openai-codex/gpt-5.5`.
+- `HOWCLI_NO_CLIPBOARD=1` disables clipboard copy.
 
 ### Safety and execution
 
 - Do not execute generated commands by default.
-- With `--run`, print the command, ask for confirmation, and execute only after an affirmative answer.
+- With `--run`, print the generated command before prompting, ask for confirmation, and execute only after an affirmative answer.
+- For commands matching known destructive patterns (`rm -rf` on root paths or `*`/`.`, `mkfs*`, `dd … of=/dev/*`, `shred` on root paths, fork bombs, direct writes to `/dev/sd*`), `--run` requires a second explicit confirmation with default `no`: only `y`, `yes`, `s`, `si`, or `sì` proceed. Anything else aborts without executing. The pattern check is a heuristic tripwire, not a security boundary.
 - Use a safe prompt bias: prefer dry-run or non-destructive variants for destructive requests when available.
 
 ### Recursive path behavior
@@ -52,11 +55,20 @@ cache.sqlite        # Local SQLite cache
 - Cache search prints the full top-ranked command as the final `COMMAND:` line.
 - Cache search copies the top-ranked command to the clipboard when possible.
 
+### Evaluation
+
+- A golden set of query→command pairs lives in `eval/cases.json`, one JSON object per case with `id`, `query`, `command`, optional `soft` and `note`.
+- `eval/run-eval.sh` runs each case through the real `howcli` stack with an isolated cache (`XDG_CACHE_HOME` under a temp dir) and clipboard disabled.
+- A generated command matching the expected one exactly is `PASS`. A generated command equal to the expected one after style normalization (`norm`: quote stripping; `2>/dev/null`, `./` prefixes ignored; whitespace collapsed; `cmd … < file` ≡ `cmd … file`; `sort … | uniq` ≡ `sort -u …`) is `PASS~` and counts as a pass. A `soft` case with any non-empty output is `SOFT-OK`. Anything else is `DIFF` (or `ERROR` when generation produced no output and stderr carries an error).
+- `--model` sets `HOWCLI_MODEL`; `--filter` runs a subset; `--out` writes a markdown report; `--quiet` hides `PASS` lines.
+- Exit code `0` only when there are no `DIFF`/`ERROR` cases.
+- `soft` cases are judge-dependent: the score counts only exact matches, so a model biased toward dry-run variants on destructive requests is not penalized there.
+
 ### Versioning
 
 - `howcli --version` prints the wrapper version.
 - `howcli-cache --version` prints the Python cache CLI version.
-- Current version: `0.1.0`.
+- Current version: `0.3.0`.
 
 ## CLI surface
 

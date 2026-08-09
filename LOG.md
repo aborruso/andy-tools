@@ -1,5 +1,17 @@
 # LOG
 
+## 2026-08-09
+
+- `tools/pi-shell-command` eval normalizzato (rerun sui 3 migliori, gpt-5.4 scartato): gpt-5.5 80% (16 PASS, di cui 1 normalizzato), deepseek-v4-flash 80% (16, di cui 1 norm), qwen3.5-plus 75% (15 esatti). L'unico DIFF residuo per tutti e 3 è il caso 17 (`du -sh ./*` vs `du -sh */`, stile). Completezza: tutti 3 coprono 20/20 casi (PASS+PASS~+SOFT-OK) senza ERROR né comandi sbagliati.
+- `tools/pi-shell-command` README: nuova sezione "Using other models" — default invariato `openai-codex/gpt-5.5`, esempi `HOWCLI_MODEL=openrouter/deepseek/deepseek-v4-flash-0731` e `.../qwen/qwen3.5-plus-20260420`, export persistente in `~/.zshrc`.
+- `tools/pi-shell-command` eval: confronto ora normalizzato (`norm()` in run-eval.sh): toglie apici, ignora `2>/dev/null`, collassa spazi, folda `./`, `cmd … < file` ≡ `cmd … file`, `sort … | uniq` ≡ `sort -u …`. I match normalizzati contano come PASS e sono marcati `PASS~` nel log (es. `wc -l < "file.csv"` ≡ `wc -l file.csv`). Caso 15 marcato `soft`: "conta quante volte" è ambiguo tra righe (`grep -c`) e occorrenze (`grep -o | wc -l`) — entrambe valide (emerso dall'eval: gpt-5.5/5.4 e dsv4f generavano la variante occorrenze).
+- Fix `eval/run-eval.sh`: `pi` reale legge stdin e divorava il feed del `while read` (con lo stub bash non emergeva). Ora `jq` scrive un TSV su file e ogni chiamata gira con `</dev/null`. Gira correttamente col `pi` vero (20/20 casi).
+- `tools/pi-shell-command` 0.3.0: nuovo `eval/` — golden set di 20 coppie query→comando (`cases.json`) e runner `run-eval.sh` che esegue lo stack reale di howcli (cache isolata, clipboard disattivata) e confronta l'output con l'atteso: `PASS` esatto, `SOFT-OK` per casi judge-dipendenti, `DIFF` con ratio difflib. Flag `--model`, `--filter`, `--out`, `--quiet`, `HOWCLI_BIN`. Exit 0 solo senza DIFF/ERROR. Aggiunto a `make check`.
+
+- `tools/pi-shell-command` 0.3.0: nuovo `eval/` — golden set di 20 coppie query→comando (`cases.json`) e runner `run-eval.sh` che esegue lo stack reale di howcli (cache isolata, clipboard disattivata) e confronta l'output con l'atteso: `PASS` esatto, `SOFT-OK` per casi judge-dipendenti, `DIFF` con ratio difflib. Flag `--model`, `--filter`, `--out`, `--quiet`, `HOWCLI_BIN`. Exit 0 solo senza DIFF/ERROR. Aggiunto a `make check`.
+- `tools/pi-shell-command` 0.3.0: `HOWCLI_MODEL` (override del modello passato a Pi, default `openai-codex/gpt-5.5`) e `HOWCLI_NO_CLIPBOARD=1` (disabilita la clipboard, usato dall'eval).
+- `tools/pi-shell-command` 0.2.0: `howcli --run` ora stampa il comando prima della conferma (`Comando: …`) e richiede una doppia conferma esplicita (`[y/N]`, default no) per i comandi che matchano pattern distruttivi noti: `rm -rf` su path root o `*`/`.`, `mkfs*`, `dd … of=/dev/*`, `shred` su path root, fork bomb, scritture dirette su `/dev/sd*`. Check euristico (tripwire), non una boundary di sicurezza. Documentato in README e SPEC.
+
 ## 2026-07-28
 
 - `tools/projump` 0.3.0: fuzzy search nel selettore — digitando si filtra su **tutti** i repo in cache (sottosequenza case-insensitive, bonus per caratteri consecutivi e inizio segmento), migliore match in cima accanto al cursore, tie-break per attività recente. Riga query nell'header, `Esc` svuota la query poi annulla, `Ctrl+C` annulla sempre; rimossi `j`/`k`/`q` (confliggono con la digitazione). Default `--limit` da 20 a 40.

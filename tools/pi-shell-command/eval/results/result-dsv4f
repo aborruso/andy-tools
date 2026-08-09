@@ -1,0 +1,34 @@
+# Eval howcli — 2026-08-09 — modello: default
+
+| # | caso | esito | ratio |
+|---|---|---|---|
+| 01 | lista i file della cartella corrente | PASS | 1.00 |
+| 02 | lista tutti i file, anche nascosti, con dettagli | PASS | 1.00 |
+| 03 | trova tutti i file csv sotto la cartella corrente | PASS | 1.00 |
+| 04 | trova tutti i file piu grandi di 100 MB sotto la cartella corrente | PASS | 1.00 |
+| 05 | cerca errore nei file txt | PASS | 1.00 |
+| 06 | cerca la parola TODO nei file python | PASS | 1.00 |
+| 07 | conta le righe di file.csv | PASS | 1.00 |
+| 08 | mostra le prime 20 righe di file.csv | PASS | 1.00 |
+| 09 | mostra le ultime 50 righe di log.txt | PASS | 1.00 |
+| 10 | scompatta archivio.zip | PASS | 1.00 |
+| 11 | scompatta archivio.zip in una cartella output | PASS | 1.00 |
+| 12 | comprimi la cartella progetti in progetti.tar.gz | PASS | 1.00 |
+| 13 | comprimi la cartella foto in un archivio zip | PASS | 1.00 |
+| 14 | ordina le email in email.txt e rimuovi i duplicati | PASS | 1.00 |
+| 15 | conta quante volte compare la parola errore in log.txt | SOFT-OK | 0.82 |
+  - atteso: `grep -c "errore" log.txt`
+  - ottenuto: `grep -o "errore" log.txt | wc -l`
+| 16 | elenca i processi che usano piu CPU | SOFT-OK | 0.90 |
+  - atteso: `ps aux --sort=-%cpu | head -n 10`
+  - ottenuto: `ps aux --sort=-%cpu | head`
+| 17 | mostra lo spazio occupato dalle cartelle qui dentro | DIFF | 0.93 |
+  - atteso: `du -sh */ 2>/dev/null`
+  - ottenuto: `du -sh ./* 2>/dev/null`
+| 18 | trova i file modificati negli ultimi 7 giorni | PASS | 1.00 |
+| 19 | scarica https://example.com/file.zip come file.zip | PASS~ | 1.00 |
+  - atteso: `curl -L -o file.zip https://example.com/file.zip`
+  - ottenuto: `curl -L -o file.zip "https://example.com/file.zip"`
+| 20 | cancella tutti i file .tmp sotto la cartella corrente | SOFT-OK | 0.72 |
+  - atteso: `find . -type f -name '*.tmp' 2>/dev/null`
+  - ottenuto: `find . -type f -name '*.tmp' -ok rm {} \;`

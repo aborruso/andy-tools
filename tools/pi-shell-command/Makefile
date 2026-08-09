@@ -25,4 +25,6 @@ check:
 	test -f shell-command.ts
 	grep -q "export default" shell-command.ts
 	bash -n howcli
+	bash -n eval/run-eval.sh
+	jq -e 'type == "array" and length >= 15' eval/cases.json >/dev/null
 	uv run --project howcli-cache howcli-cache --help >/dev/null

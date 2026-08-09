@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.1.0"
+VERSION="0.3.0"
 
 run=false
 debug=false
@@ -45,7 +45,33 @@ cache_save() {
   howcli-cache save --query "$1" --command "$2" "${debug_flag[@]}" >/dev/null 2>&1 || true
 }
 
+# Patterns that trigger a double confirmation before execution in --run mode.
+# Heuristic tripwire, not a security boundary: the user can still confirm.
+DANGEROUS_PATTERNS=(
+  'rm[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*-[a-zA-Z]*[rRfF][a-zA-Z]*[rRfF][a-zA-Z]*[[:space:]]+/'      # rm -rf /… (root paths)
+  'rm[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*-[a-zA-Z]*[rRfF][a-zA-Z]*[rRfF][a-zA-Z]*[[:space:]]+\*$'     # rm -rf *…
+  'rm[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*-[a-zA-Z]*[rRfF][a-zA-Z]*[rRfF][a-zA-Z]*[[:space:]]+\.$'     # rm -rf .
+  'mkfs(\.[a-z0-9]+)?([[:space:]]|$)'                      # mkfs / mkfs.ext4 …
+  'dd[[:space:]]+[^|;&]*of=[[:space:]]*/dev/'              # dd … of=/dev/…
+  '\bshred\b([[:space:]]+-[a-zA-Z]+)*[[:space:]]+/'        # shred su path root
+  ':[[:space:]]*\(\)[[:space:]]*\{[[:space:]]*:[[:space:]]*\|[[:space:]]*:[[:space:]]*&[[:space:]]*\};[[:space:]]*:'  # fork bomb
+  '>[[:space:]]*/dev/sd'                                   # scrittura diretta su disco
+)
+
+dangerous() {
+  local cmd="$1" pat
+  for pat in "${DANGEROUS_PATTERNS[@]}"; do
+    if printf '%s\n' "$cmd" | grep -qE "$pat"; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 copy_to_clipboard() {
+  if [ "${HOWCLI_NO_CLIPBOARD:-0}" = "1" ]; then
+    return 1
+  fi
   if command -v timeout >/dev/null 2>&1; then
     if command -v wl-copy >/dev/null 2>&1 && printf '%s' "$1" | timeout 2s wl-copy >/dev/null 2>&1; then
       return 0
@@ -144,7 +170,7 @@ if [ "$debug" = true ]; then
 fi
 
 command="$(pi -p \
-  --model openai-codex/gpt-5.5 \
+  --model "${HOWCLI_MODEL:-openai-codex/gpt-5.5}" \
   --shell-command \
   "${debug_flag[@]}" \
   --no-session \
@@ -166,6 +192,23 @@ printf '%s\n' "$command"
 
 if [ "$run" != true ]; then
   exit 0
+fi
+
+printf 'Comando: %s\n' "$command" >&2
+
+if dangerous "$command"; then
+  printf 'Comando potenzialmente distruttivo: confermi davvero? [y/N] ' >&2
+  if ! IFS= read -r answer; then
+    printf '\n' >&2
+    exit 130
+  fi
+  case "${answer,,}" in
+    y|yes|s|si|sì) ;;
+    *) printf '\nNon eseguo.\n' >&2
+       exit 1
+       ;;
+  esac
+  printf '\n' >&2
 fi
 
 printf 'Eseguire? [Y/n] ' >&2
