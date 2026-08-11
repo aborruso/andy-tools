@@ -1,5 +1,9 @@
 # LOG
 
+## 2026-08-11
+
+- `tools/projump`: la lista non sfora più l'altezza del terminale. Prima venivano stampate tutte le voci fino a `--limit`: su finestre piccole il terminale scrollava, l'intestazione spariva e si vedevano solo le ultime righe (anche il repaint via `\x1b[<n>F` risultava corrotto, perché le righe scrollate via non sono più raggiungibili). Ora `listSlots()`/`viewWindow()` calcolano a ogni render una finestra che sta in `rows - 1`, si parte sempre dalla prima voce, `↑`/`↓` scrollano seguendo la selezione e una riga `1-6 of 40` indica la posizione.
+
 ## 2026-08-09
 
 - `tools/pi-shell-command` eval normalizzato (rerun sui 3 migliori, gpt-5.4 scartato): gpt-5.5 80% (16 PASS, di cui 1 normalizzato), deepseek-v4-flash 80% (16, di cui 1 norm), qwen3.5-plus 75% (15 esatti). L'unico DIFF residuo per tutti e 3 è il caso 17 (`du -sh ./*` vs `du -sh */`, stile). Completezza: tutti 3 coprono 20/20 casi (PASS+PASS~+SOFT-OK) senza ERROR né comandi sbagliati.

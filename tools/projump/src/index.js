@@ -345,6 +345,7 @@ async function selectRepo(repos, root, fromCache, limit) {
   let query = "";
   let filtered = repos.slice(0, limit);
   let index = 0;
+  let offset = 0;
   let renderedLines = 0;
 
   const applyFilter = () => {
@@ -359,6 +360,7 @@ async function selectRepo(repos, root, fromCache, limit) {
         .map((entry) => entry.repo);
     }
     index = 0;
+    offset = 0;
   };
 
   readline.emitKeypressEvents(input);
@@ -381,7 +383,9 @@ async function selectRepo(repos, root, fromCache, limit) {
         output.write("\x1b[J");
       }
 
-      const rows = buildRows(filtered, index, root, fromCache, query, repos.length);
+      const view = viewWindow(filtered.length, index, offset, listSlots(output.rows));
+      offset = view.start;
+      const rows = buildRows(filtered, index, root, fromCache, query, repos.length, view);
       renderedLines = rows.length;
       output.write(rows.join("\n"));
       output.write("\n");
@@ -440,7 +444,28 @@ async function selectRepo(repos, root, fromCache, limit) {
   });
 }
 
-function buildRows(filtered, selectedIndex, root, fromCache, query, total) {
+// The header block above the list: title, hints, prompt, blank line.
+const HEADER_ROWS = 4;
+
+// Rows left for the list (plus its position indicator) so the whole frame fits
+// the terminal: the repaint moves the cursor up by the rows it wrote, and lines
+// the terminal scrolled away are out of reach.
+function listSlots(terminalRows) {
+  return Math.max(1, (terminalRows || 24) - HEADER_ROWS - 1);
+}
+
+function viewWindow(length, index, offset, slots) {
+  const showIndicator = length > slots && slots > 1;
+  const listRows = Math.min(length, showIndicator ? slots - 1 : slots);
+
+  let start = Math.min(offset, index);
+  start = Math.max(start, index - listRows + 1);
+  start = Math.max(0, Math.min(start, length - listRows));
+
+  return { start, listRows, showIndicator };
+}
+
+function buildRows(filtered, selectedIndex, root, fromCache, query, total, view) {
   const source = fromCache ? "cached, -l to rescan" : "fresh scan";
   const status = query === "" ? `${filtered.length} newest by activity` : `${filtered.length}/${total} match`;
   const rows = [
@@ -455,12 +480,18 @@ function buildRows(filtered, selectedIndex, root, fromCache, query, total) {
     return rows;
   }
 
-  for (let i = 0; i < filtered.length; i++) {
+  const end = view.start + view.listRows;
+
+  for (let i = view.start; i < end; i++) {
     const repo = filtered[i];
     const marker = i === selectedIndex ? "›" : " ";
     const date = new Date(repo.sortMs).toISOString().slice(0, 10);
     const label = `${date}  ${prettyPath(repo.path, root)}`;
     rows.push(i === selectedIndex ? `${marker} \x1b[1m${label}\x1b[0m` : `${marker} ${label}`);
+  }
+
+  if (view.showIndicator) {
+    rows.push(`  \x1b[2m${view.start + 1}-${end} of ${filtered.length}\x1b[0m`);
   }
 
   return rows;

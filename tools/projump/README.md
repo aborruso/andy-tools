@@ -30,10 +30,12 @@ Keyboard shortcuts:
 | --- | --- |
 | any printable char | Add to the fuzzy query |
 | `Backspace` | Delete the last query character |
-| `↑` / `↓` | Move up / down |
+| `↑` / `↓` | Move up / down (scrolls the list) |
 | `Enter` | Print selected path |
 | `Esc` | Clear the query; if already empty, cancel |
 | `Ctrl+C` | Cancel |
+
+The list never overflows the terminal: it shows as many entries as fit, starting from the first, and scrolls with the cursor. A `1-6 of 40` line at the bottom shows the current window.
 
 ## Fuzzy search
 
