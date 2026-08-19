@@ -41,7 +41,7 @@ Expected output:
 ls
 ```
 
-By default, `howcli` prints the generated command and copies it to the system clipboard when a clipboard command is available.
+By default, `howcli` prints the generated command and copies it to the system clipboard when a clipboard command is available. On WSL it prefers `clip.exe` and copies without a trailing newline, so CTRL+V pastes exactly the command (no carriage return, no auto-execute in zsh).
 
 For commands that search, list, read, or count files inside a path, `howcli` asks Pi to prefer recursive commands by default, including subdirectories.
 
@@ -77,6 +77,8 @@ export HOWCLI_MODEL=openrouter/deepseek/deepseek-v4-flash-0731
 ```
 
 (add the same line to `~/.zshrc` for a persistent default).
+
+Without any configuration, `howcli` already retries on its own: when the primary model fails (for example `Codex error: The usage limit has been reached`), it falls back to `HOWCLI_FALLBACK_MODELS` (space-separated; default `openrouter/deepseek/deepseek-v4-flash-0731 openrouter/qwen/qwen3.5-plus-20260420`). `HOWCLI_NO_FALLBACK=1` disables the retry (the eval runner sets it).
 
 To search the local cache without calling Pi:
 
@@ -170,7 +172,8 @@ The runner calls the real `howcli` stack (isolated cache, clipboard disabled), c
 - `howcli` prints the generated command without executing it.
 - `HOWCLI_MODEL` overrides the model passed to Pi (default `openai-codex/gpt-5.5`). Useful to compare models via `eval/run-eval.sh`.
 - `HOWCLI_NO_CLIPBOARD=1` disables copying to the system clipboard. The eval runner sets it.
-- `howcli` also copies the generated command to the system clipboard when `wl-copy`, `xclip`, `pbcopy`, or `clip.exe` is available.
+- When the primary model fails (e.g. ChatGPT usage limit), `howcli` retries automatically with `HOWCLI_FALLBACK_MODELS` (default: two OpenRouter models); `HOWCLI_NO_FALLBACK=1` disables it (set by the eval runner).
+- `howcli` copies the generated command to the system clipboard when `clip.exe` (preferred on WSL), `wl-copy`, `xclip`, or `pbcopy` is available, with no trailing newline so CTRL+V pastes the bare command.
 - `howcli --run` shows the command, asks for confirmation, and requires a second explicit confirmation for commands matching known destructive patterns.
 - `howcli --debug` asks Pi not to add `2>/dev/null` to generated commands.
 - `howcli -c` / `howcli --cache` searches the local command cache using fuzzy matching and does not call Pi.

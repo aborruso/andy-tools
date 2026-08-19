@@ -1,5 +1,16 @@
 # LOG
 
+## 2026-08-19
+
+- `tools/pi-shell-command` 0.3.2: fallback automatico del modello. Quando il primario fallisce (es. `Codex error: The usage limit has been reached` su gpt-5.5) howcli riprova con `HOWCLI_FALLBACK_MODELS` (default: deepseek-v4-flash e qwen3.5-plus via OpenRouter), avviso su stderr e stdout pulito; `HOWCLI_NO_FALLBACK=1` disattiva (lo imposta `eval/run-eval.sh` per mantenere onesti i risultati per-modello). Verificato dal vivo con la quota Codex esaurita: fallback → `rg -l "jiku" ~ --glob '*.sh' 2>/dev/null` exit 0, clipboard 40 char esatti senza CRLF; senza fallback → exit 1 pulito.
+
+- `tools/pi-shell-command` 0.3.1: fix clipboard per CTRL+V. Il ramo `clip.exe` inviava un `\n` finale che diventa CRLF nella clipboard Windows (incollando, il comando si portava dietro un ritorno a capo); inoltre su questo WSL `wl-copy` e `xclip` falliscono entrambi (exit 1), quindi `clip.exe` era già il percorso effettivo ma arrivava per ultimo. Ora `copy_to_clipboard` prova prima `clip.exe` con `printf '%s'` (niente newline): verificato con run reali conteggiando i caratteri in memoria — `date` = 4 char (100,97,116,101), `ls` = 2 (108,115), zero CRLF. Nota: il "non funziona più" di oggi era anche il usage limit di `openai-codex/gpt-5.5` (howcli esce 1 senza copiare nulla); testato ok con `HOWCLI_MODEL=openrouter/deepseek/deepseek-v4-flash-0731`.
+- `tools/pi-shell-command`: cache verificata end-to-end con il wrapper installato e un `XDG_CACHE_HOME` isolato: dopo `howcli "mostra il nome del kernel Linux"` la stessa query via `howcli --cache` restituisce `COMMAND: uname -s`. Il wrapper installato è identico al sorgente; nessuna modifica al tool.
+
+## 2026-08-14
+
+- `tools/projump`: ranking del filtro rifatto. Il match era greedy sui singoli caratteri (nessun backtracking) e senza bonus per sottostringa: cercando `tasca`, `~/git/idee/la-tasca` prendeva 12.8 (la `t` veniva consumata da `git`, la `a` da `la`) mentre `~/lavagna/tmp/analisi_cambiamenti_cusras` arrivava a 35.6 accumulando i +10 di inizio-parola su un path lungo. Ora `fuzzyScore()` è a strati: sottostringa nel basename (+bonus word-boundary e copertura del nome) → sottostringa nel path → sottosequenza come prima; la penalità per lunghezza passa da `0.01` a `0.15` per carattere e si applica solo agli ultimi due strati, così tra i match sul nome il tie-break resta l'attività recente. `tasca` → `la-tasca` 165 contro 30 del secondo.
+
 ## 2026-08-11
 
 - `tools/projump`: la lista non sfora più l'altezza del terminale. Prima venivano stampate tutte le voci fino a `--limit`: su finestre piccole il terminale scrollava, l'intestazione spariva e si vedevano solo le ultime righe (anche il repaint via `\x1b[<n>F` risultava corrotto, perché le righe scrollate via non sono più raggiungibili). Ora `listSlots()`/`viewWindow()` calcolano a ogni render una finestra che sta in `rows - 1`, si parte sempre dalla prima voce, `↑`/`↓` scrollano seguendo la selezione e una riga `1-6 of 40` indica la posizione.

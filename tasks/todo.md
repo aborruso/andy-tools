@@ -1,37 +1,57 @@
-# howcli — eval set di 20 coppie query→comando
+# projump — ranking del filtro fuzzy
 
-## Contesto
+## Verifica — pi-shell-command cache
 
-Suggerimento accettato dall'utente (opzione 2 della valutazione): golden set di ~15-20 coppie query→comando + runner che esegue lo stack reale di howcli con modelli diversi, senza toccare il filesystem (i comandi vengono solo stampati, mai eseguiti). Enabler minimi in howcli: `HOWCLI_MODEL` (override modello) e `HOWCLI_NO_CLIPBOARD` (niente clipboard durante l'eval).
+### Fase 1 — riproduzione
 
-## Fase 1 — implementazione howcli
+- [x] Generare un comando con cache isolata → verify: `howcli` reale stampa `uname -s` e scrive la riga
+- [x] Cercare lo stesso comando con `howcli -c` → verify: restituisce `COMMAND: uname -s`
 
-- [x] `HOWCLI_MODEL` (default `openai-codex/gpt-5.5`) e `HOWCLI_NO_CLIPBOARD=1` in `howcli`
-- [x] Bump versione 0.3.0
+### Fase 2 — analisi
 
-## Fase 2 — harness
+- [x] Confrontare wrapper installato e sorgente → verify: `/home/aborruso/bin/howcli` è identico al sorgente
 
-- [x] `eval/cases.json`: 20 casi — 17 esatti + 3 soft (processi CPU, download con varianti curl/wget, delete con bias dry-run)
-- [x] `eval/run-eval.sh`: runner bash (flag `--model`, `--filter`, `--out`, `--quiet`; `HOWCLI_BIN`); verdetto PASS/SOFT-OK/DIFF/ERROR, ratio difflib via python3, cache isolata (temp), clipboard disattivata, exit 0 solo senza DIFF/ERROR
-- [x] README (sezione Evaluating + note env vars), SPEC (requirements + sezione Evaluation + versione 0.3.0), Makefile (`check` ora valida runner e cases.json), LOG.md
+### Fase 3 — clipboard CTRL+V
 
-## Fase 3 — verifica
+- [x] Contare i caratteri in memoria dopo un run reale → verify: `date` = 4 caratteri (100,97,116,101), `ls` = 2 (108,115), nessun CRLF finale
+- [x] Correggere il ramo `clip.exe` (niente `\n`, priorità su wl-copy/xclip) → verify: reinstall 0.3.1, `bash -n` OK, wrapper in sync
 
-- [x] Stub `pi` che risponde con il comando atteso dal cases.json (modello perfetto) e con `echo STUB_BAD` (modello pessimo): PASS 20/20 exit 0 nel primo caso, 0 PASS + 3 SOFT-OK + 17 DIFF + exit 1 nel secondo
-- [x] `--filter csv` → 3 casi (03, 07, 08); `--out` → report markdown con header + 20 righe tabella + dettagli indentati; `--quiet` nasconde i PASS
-- [x] Passthrough modello: default → `--model openai-codex/gpt-5.5`; `HOWCLI_MODEL` override; runner `--model` → args di pi ricevono il valore
-- [x] Opzione invalida → exit 2; `--help` → exit 0
-- [x] `make check` (ora include `bash -n eval/run-eval.sh` e validazione jq del cases.json) e `make install`: `~/bin/howcli --version` = 0.3.0 con entrambe le env vars
+### Fase 4 — fallback automatico modello
 
-## Decisioni prese
+- [x] Riprovare con modelli di fallback quando il primario fallisce (usage limit) → verify: run reale con default a quota esaurita stampa avviso e genera via OpenRouter (`rg -l "jiku" …`, exit 0)
+- [x] `HOWCLI_NO_FALLBACK=1` disattiva il retry senza avvisi fuorvianti → verify: fallimento pulito exit 1; eval runner lo imposta
+- [x] Clipboard pulita anche via fallback → verify: `date +%F` = 8 char (100,97,116,101,32,43,37,70), zero CRLF
 
-1. Casi attesi allineati alle regole del system prompt (ricorsività di default, `2>/dev/null` su scan, niente stderr nascosto su comandi state-changing)
-2. Soft cases non penalizzati nel punteggio esattezza: `SOFT-OK` con output non vuoto qualsiasi
-3. Confronto esatto come barra onesta; la ratio difflib aiuta il giudizio umano sui DIFF
-4. `HOWCLI_MODEL` usa l'env (non un flag) per non cambiare la CLI di howcli; il runner mappa `--model` → env
+### Review
+
+`howcli` salva correttamente il comando dopo una risposta riuscita. Non serve una modifica al tool.
+
+## Problema
+
+Con query `tasca`, `~/git/idee/la-tasca` finisce in fondo: il matching è greedy (nessun backtracking) e non esiste bonus per sottostringa esatta; i +10 di inizio-parola sparsi su path lunghi vincono.
+
+## Fase 1 — scoring
+
+- [x] `fuzzyScore`: se la query è sottostringa del **basename**, punteggio alto (+ extra se su word boundary, + copertura del nome) → verify: `la-tasca` primo per `tasca` (165 vs 30)
+- [x] fallback: sottostringa nel path completo, poi sequenza fuzzy attuale (`sequenceScore`) → verify: query senza substring continuano a matchare
+- [x] penalità lunghezza da `0.01` a `0.15` per carattere, solo sui rami di fallback → verify: tie-break per attività preservato tra i match sul nome
+
+## Fase 2 — verifica
+
+- [x] `tmp/score-check.mjs`: confronto punteggi sui repo reali dalla cache → verify: `tasca`, `ars`, `iride`, `pnrr`, `andy` ordinati come atteso
+- [x] `node src/index.js --help` gira
+
+## Fase 3 — doc
+
+- [x] README projump: sezione "Fuzzy search" con i tre strati di ranking
+- [x] LOG.md
 
 ## Review
 
-- Prime due run: `command -v` su `HOWCLI_BIN` path falliva perché il repo copy di howcli non aveva il bit eseguibile (644). Fix: check `-x` per path con slash + `chmod +x` su `howcli` ed `eval/run-eval.sh` nel repo (coerente con esearch/wopen che sono 755).
-- Soft case 16/19/20 con stub pessimo → correttamente `SOFT-OK` (output non vuoto), non DIFF: il bias dry-run del prompt non viene penalizzato.
-- Esecuzione reale vs modelli (gpt-5.5, deepseek flash, ecc.) NON eseguita: richiede la sessione Pi/ChatGPT dell'utente e 20 chiamate a modello lato suo. L'harness è pronto: `./eval/run-eval.sh --model <id>`.
+`fuzzyScore()` ora è a strati invece che un solo passaggio greedy: sottostringa nel basename (60 + 20 se word boundary + 60 + 40×copertura) → sottostringa nel path (60/80) → `sequenceScore()` invariato, penalizzato per lunghezza. La logica di ordinamento in `applyFilter()` non è stata toccata.
+
+Non verificato a mano nel selettore interattivo (richiede TTY): il controllo è stato fatto sui punteggi con i path reali in cache.
+
+## Domande aperte
+
+- nessuna

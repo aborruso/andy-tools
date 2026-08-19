@@ -24,8 +24,9 @@ cache.sqlite        # Local SQLite cache
 - Activate the `shell-command` Pi extension.
 - Disable tools, context files, skills, and prompt templates for predictable non-interactive output.
 - Print only the generated command.
-- Copy the generated command to the clipboard when a supported clipboard command is available.
+- Copy the generated command to the clipboard when a supported clipboard command is available, without a trailing newline: on WSL `clip.exe` is preferred (CTRL+V pastes from the Windows clipboard) and a trailing newline would become CRLF in the pasted command. `wl-copy`, `xclip`, and `pbcopy` remain fallbacks.
 - `HOWCLI_MODEL` overrides the model passed to Pi (`--model`), default `openai-codex/gpt-5.5`.
+- When the primary model fails (for example the ChatGPT usage limit is reached), retry automatically with the models in `HOWCLI_FALLBACK_MODELS` (space-separated; default `openrouter/deepseek/deepseek-v4-flash-0731 openrouter/qwen/qwen3.5-plus-20260420`), printing a notice on stderr. `HOWCLI_NO_FALLBACK=1` disables the retry; the eval runner sets it to keep per-model results honest.
 - `HOWCLI_NO_CLIPBOARD=1` disables clipboard copy.
 
 ### Safety and execution
@@ -68,7 +69,7 @@ cache.sqlite        # Local SQLite cache
 
 - `howcli --version` prints the wrapper version.
 - `howcli-cache --version` prints the Python cache CLI version.
-- Current version: `0.3.0`.
+- Current version: `0.3.2`.
 
 ## CLI surface
 

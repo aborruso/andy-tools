@@ -62,6 +62,7 @@ EVAL_TMP="$(mktemp -d)"
 trap 'rm -rf "$EVAL_TMP"' EXIT
 export XDG_CACHE_HOME="$EVAL_TMP/cache"
 export HOWCLI_NO_CLIPBOARD=1
+export HOWCLI_NO_FALLBACK=1
 if [ -n "$model" ]; then
   export HOWCLI_MODEL="$model"
   model_label="$model"
