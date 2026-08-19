@@ -41,6 +41,12 @@ The list never overflows the terminal: it shows as many entries as fit, starting
 
 Just start typing to filter: the query matches repository paths as a case-insensitive subsequence (`andytools` matches `~/git/idee/andy-tools`), with bonuses for consecutive characters and matches at the start of a path segment or word.
 
+Ranking is layered, best first:
+
+1. the query is a literal substring of the **folder name** (`tasca` → `~/git/idee/la-tasca`), with extra weight when it starts a word and when it covers most of the name;
+2. the query is a literal substring of the full path;
+3. subsequence match, penalised by path length so long paths don't win by accumulating word-start bonuses.
+
 - The search runs over **all** cached repositories, not just the ones on screen, so you can reach old projects too.
 - Results are sorted by match score (tie-break: most recent activity) and capped at `--limit`; the best match is always at the top, next to the cursor.
 - With an empty query the list is the usual "newest by activity" view.

@@ -315,11 +315,30 @@ function isVisibleProject(repoPath) {
 
 function fuzzyScore(query, text) {
   const haystack = text.toLowerCase();
+  const needle = query.toLowerCase();
+
+  const base = path.basename(haystack);
+  const inBase = substringScore(needle, base);
+  if (inBase !== null) return inBase + 60 + 40 * (needle.length / base.length);
+
+  const raw = substringScore(needle, haystack) ?? sequenceScore(needle, haystack);
+  if (raw === null) return null;
+  return raw - haystack.length * 0.15;
+}
+
+function substringScore(needle, text) {
+  const at = text.indexOf(needle);
+  if (at === -1) return null;
+  const onBoundary = at === 0 || "/-_. ".includes(text[at - 1]);
+  return 60 + (onBoundary ? 20 : 0);
+}
+
+function sequenceScore(needle, haystack) {
   let score = 0;
   let searchFrom = 0;
   let previousMatch = -2;
 
-  for (const char of query.toLowerCase()) {
+  for (const char of needle) {
     const found = haystack.indexOf(char, searchFrom);
     if (found === -1) return null;
 
@@ -331,7 +350,7 @@ function fuzzyScore(query, text) {
     searchFrom = found + 1;
   }
 
-  return score - haystack.length * 0.01;
+  return score;
 }
 
 async function selectRepo(repos, root, fromCache, limit) {
