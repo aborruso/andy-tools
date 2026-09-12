@@ -71,6 +71,12 @@ Se il catalogo non è raggiungibile, `ask` risponde lo stesso: l'avviso va su st
 - Le `suggested_questions` del backend non vengono mostrate: restituisce chiavi i18n non risolte (`ISTAT1`, `ISTAT2`, `ISTAT3`), non domande.
 - L'endpoint `AI/GeneratePreview` (l'anteprima dei dati accanto a un risultato) non è coperto.
 
+## Deviazioni dalla metodologia CLI-Anything
+
+Il tool segue CLI-Anything nel layout a package, nell'entry point `cli-anything-istatdata-ai`, nei sottocomandi Click, nel REPL come comportamento di default, in `--json`, nel `TEST.md` scritto prima dei test e nella SKILL.md pacchettizzata. Non implementa la macchina di stato di sessione con undo/redo, il salvataggio automatico delle mutazioni, `--dry-run` e la scrittura con lock del file di sessione: il target è una ricerca in sola lettura e non c'è stato mutabile da proteggere.
+
+Seconda deviazione, di collocazione: il progetto sta sotto `tools/istatdata-ai/` invece che nella radice del repo, per comparire nella tabella dei tool.
+
 ## Documentazione tecnica
 
 `agent-harness/ISTATDATA_AI.md` descrive endpoint, payload, header e link, con le verifiche fatte. `agent-harness/TEST.md` contiene il piano di test e i risultati.
