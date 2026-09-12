@@ -5,3 +5,6 @@ node_modules/
 
 __pycache__/
 *.pyc
+
+# documento di lavoro personale
+tasks/todo.md
