@@ -13,3 +13,6 @@ tasks/todo.md
 
 # impostazioni locali di Claude Code
 .claude/settings.local.json
+
+# tool tenuto fuori dal repo per ora
+tools/istatdata-ai/

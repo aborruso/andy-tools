@@ -15,4 +15,3 @@ A personal collection of small tools for practical tasks, automation, and everyd
 | `linux-cleanup` | Safely clean cache and temp files on Linux/WSL2 (`~/.cache`, `/tmp`, apt). Supports `--dry-run` and `--no-sudo`. | [script](tools/linux-cleanup/linux-cleanup.sh) |
 | `stale-repos` | List abandoned, bulky git repos (no recent commit/edit, over a size threshold; dirty repos excluded) as candidates to move/archive. List-only. | [README](tools/stale-repos/README.md) |
 | `esearch` | Wrapper around the Everything search CLI (`es.exe`) for WSL: plain words become glob patterns (`*word*`), output re-encoded from cp850 to UTF-8. | [README](tools/esearch/README.md) |
-| `istatdata-ai` | `istat-ask`: the IstatData AI search from the command line. A question in plain language, the matching ISTAT datasets with title, category path, a link to the table and the SDMX download URLs. | [README](tools/istatdata-ai/README.md) |
