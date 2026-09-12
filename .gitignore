@@ -8,3 +8,6 @@ __pycache__/
 
 # documento di lavoro personale
 tasks/todo.md
+
+# impostazioni locali di Claude Code
+.claude/settings.local.json
