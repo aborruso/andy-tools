@@ -1,0 +1,110 @@
+{
+ "categoryGroups": [
+  {
+   "id": "IT1,HOU,1.0",
+   "label": "Households Economic Conditions and Disparities",
+   "categories": [
+    {
+     "id": "HOU_INCOME",
+     "label": "Household income",
+     "childrenCategories": [
+      {
+       "id": "DCCV_REDNETFAMFONTERED",
+       "label": "Net income",
+       "childrenCategories": [],
+       "datasetIdentifiers": [
+        "IT1,32_292_DF_DCCV_REDNETFAMFONTERED_8,1.0"
+       ]
+      }
+     ],
+     "datasetIdentifiers": [
+      "IT1,32_221_DF_DCCV_GINIREDD_1,1.0"
+     ]
+    },
+    {
+     "id": "MEF_REDDITIIRPEF_COM",
+     "label": "Irpef taxable incomes (Ipef) - municipalities",
+     "childrenCategories": [],
+     "datasetIdentifiers": [
+      "IT1,30_1008_DF_MEF_REDDITIIRPEF_COM_1,1.0",
+      "IT1,30_1008_DF_MEF_REDDITIIRPEF_COM_2,1.0"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IT1,Z0930TER,1.0",
+   "label": "Territorial features",
+   "categories": [
+    {
+     "id": "BES_T",
+     "label": "Bes at local level",
+     "childrenCategories": [],
+     "datasetIdentifiers": [
+      "IT1,DF_BES_TERRIT_4,1.0"
+     ]
+    }
+   ]
+  }
+ ],
+ "datasetMap": {
+  "IT1,32_221_DF_DCCV_GINIREDD_1,1.0": {
+   "title": "Homogeneity of regional income",
+   "referenceMetadata": "https://esploradati.istat.it/RefMeta/template/GenericMetadataTemplate.html?nodeId=DW&metadataSetId=MS_ISTAT_TOPMETA2&reportId=DCCV_GINIREDD&lang=en&BaseUrlMDA=https://esploradati.istat.it/METADATA_API",
+   "layoutFilter": [
+    "FREQ"
+   ],
+   "datasetType": "normal"
+  },
+  "IT1,32_292_DF_DCCV_REDNETFAMFONTERED_8,1.0": {
+   "title": "Professional status of main income earner",
+   "referenceMetadata": "https://esploradati.istat.it/RefMeta/template/GenericMetadataTemplate.html?nodeId=DW&metadataSetId=MS_ISTAT_TOPMETA2&reportId=DCCV_REDNETFAMFONTERED&lang=en&BaseUrlMDA=https://esploradati.istat.it/METADATA_API",
+   "layoutFilter": [
+    "FREQ",
+    "DATA_TYPE",
+    "MEASURE",
+    "IMPUTED_RENTS",
+    "NUMBER_HOUSEHOLD_COMP",
+    "HOUSEHOLD_TYPOLOGY",
+    "NUMB_OF_CHILDREN",
+    "NUMB_OF_ELDERLY",
+    "SEX_MAIN_PERCEPTOR",
+    "AGE_MAIN_EARNIER",
+    "EDU_LEV_MAIN_EARN"
+   ],
+   "datasetType": "normal"
+  },
+  "IT1,30_1008_DF_MEF_REDDITIIRPEF_COM_1,1.0": {
+   "title": "Taxpayers and main income categories",
+   "referenceMetadata": "https://esploradati.istat.it/RefMeta/template/GenericMetadataTemplate.html?nodeId=DW&metadataSetId=MS_ISTAT_TOPMETA2&reportId=MEF_REDDITIIRPEF_COM&lang=en&BaseUrlMDA=https://esploradati.istat.it/METADATA_API",
+   "layoutFilter": [
+    "FREQ",
+    "DATA_TYPE",
+    "AMOUNT_CLASS"
+   ],
+   "datasetType": "normal"
+  },
+  "IT1,30_1008_DF_MEF_REDDITIIRPEF_COM_2,1.0": {
+   "title": "Taxpayers and aggregate income by amount class",
+   "referenceMetadata": "https://esploradati.istat.it/RefMeta/template/GenericMetadataTemplate.html?nodeId=DW&metadataSetId=MS_ISTAT_TOPMETA2&reportId=MEF_REDDITIIRPEF_COM&lang=en&BaseUrlMDA=https://esploradati.istat.it/METADATA_API",
+   "layoutFilter": [
+    "FREQ",
+    "DATA_TYPE",
+    "TIME_PERIOD"
+   ],
+   "datasetType": "normal"
+  },
+  "IT1,DF_BES_TERRIT_4,1.0": {
+   "title": "Economic well-being",
+   "layoutFilter": [
+    "FREQ",
+    "DOMAIN",
+    "DATA_TYPE",
+    "SEX",
+    "EDITION"
+   ],
+   "datasetType": "normal"
+  }
+ },
+ "datasetUncategorized": []
+}

@@ -5,6 +5,8 @@ node_modules/
 
 __pycache__/
 *.pyc
+*.egg-info/
+.pytest_cache/
 
 # documento di lavoro personale
 tasks/todo.md
