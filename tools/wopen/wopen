@@ -97,8 +97,14 @@ require_powershell() {
 open_via_powershell() {
   local action="$1"
   local target="$2"
+  # The target travels in an environment variable, never as an argument:
+  # powershell.exe -Command appends trailing arguments to the script text and
+  # parses them, so & ( ) | ' break it and ; , space { } truncate it silently.
+  # WSLENV carries the name with no flag, so the value crosses over verbatim.
   set +e
-  output=$(powershell.exe -NoProfile -NonInteractive -Command '& { param($p) Start-Process -FilePath $p -ErrorAction Stop }' "$target" 2>&1)
+  output=$(WOPEN_TARGET="$target" WSLENV="${WSLENV:+$WSLENV:}WOPEN_TARGET" \
+    powershell.exe -NoProfile -NonInteractive -Command \
+    'try { Start-Process -FilePath $env:WOPEN_TARGET -ErrorAction Stop } catch { [Console]::Error.WriteLine($_.Exception.Message); exit 1 }' 2>&1)
   status=$?
   set -e
   if [[ $status -ne 0 ]]; then
@@ -201,8 +207,23 @@ if $copy_mode; then
     exit 1
   fi
 
+  # clip.exe reads raw bytes in the ANSI codepage: non-ASCII characters survive
+  # only as UTF-16LE. No BOM: clip.exe copies it as a leading U+FEFF character.
+  clip_source=$input
+  if command -v iconv >/dev/null 2>&1; then
+    tmp_utf16=$(mktemp)
+    trap 'rm -f "$tmp_utf16"' EXIT
+    # drop a UTF-8 BOM in the source, it would end up in the clipboard too
+    if sed '1s/^\xef\xbb\xbf//' "$input" | iconv -f UTF-8 -t UTF-16LE > "$tmp_utf16" 2>/dev/null; then
+      clip_source=$tmp_utf16
+    else
+      echo "wopen: warning: $input is not valid UTF-8, copied as raw bytes." >&2
+      echo "Non-ASCII characters may be corrupted in the clipboard." >&2
+    fi
+  fi
+
   set +e
-  output=$(clip.exe < "$input" 2>&1)
+  output=$(clip.exe < "$clip_source" 2>&1)
   status=$?
   set -e
   if [[ $status -ne 0 ]]; then
