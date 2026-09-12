@@ -115,6 +115,7 @@ make -C tools/wopen uninstall BINDIR=/usr/local/bin
 - Files and URLs are delegated to PowerShell `Start-Process -FilePath`, so Windows chooses the default application.
 - With `-s`: opens a new Windows Terminal (`wt.exe`) in the given directory, or in the parent directory if a file is given. URLs and Windows paths are not supported with `-s`.
 - With `-c`: copies the content of a file to the Windows clipboard via `clip.exe`. Works only with local WSL files — directories, URLs, and Windows paths are not supported.
+- With `-c`, the content is converted to UTF-16LE before reaching `clip.exe`, which would otherwise read the raw bytes in the ANSI codepage and mangle every non-ASCII character. A leading UTF-8 BOM is dropped. If the file is not valid UTF-8, `wopen` warns on stderr and falls back to sending the raw bytes.
 - Error messages fail fast and suggest the next valid command.
 
 ## Usage in non-interactive environments (AI agents, CI)
